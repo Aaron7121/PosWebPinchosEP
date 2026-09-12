@@ -2,6 +2,7 @@ package com.joedev.posweb.pep.rest;
 
 import com.joedev.posweb.pep.entity.Cliente;
 import com.joedev.posweb.pep.services.ClienteService;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
@@ -17,6 +18,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 
+@RolesAllowed({"ADMIN", "COLABORADOR"})
 @Path("/api/clientes")
 
 @Produces(MediaType.APPLICATION_JSON)

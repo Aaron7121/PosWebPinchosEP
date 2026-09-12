@@ -1,19 +1,19 @@
 package com.joedev.posweb.pep.services;
 
-
-import com.joedev.posweb.pep.entity.Usuario;
-import com.joedev.posweb.pep.repository.UsuarioRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.List;
+import jakarta.persistence.EntityManager;
 
 @ApplicationScoped
 public class TestConnectionService {
 
     @Inject
-    UsuarioRepository repository;
+    EntityManager entityManager;
 
-    public List<Usuario> obtenerTodos() {
-        return repository.listAll();
+    public TestConnectionResponse verificar() {
+        Integer uno = (Integer) entityManager
+                .createNativeQuery("SELECT 1")
+                .getSingleResult();
+        return new TestConnectionResponse("Conexión a PostgreSQL y Flyway exitosa", uno == 1);
     }
 }

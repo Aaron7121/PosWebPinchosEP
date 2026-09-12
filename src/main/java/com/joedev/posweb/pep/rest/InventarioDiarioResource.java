@@ -2,6 +2,7 @@ package com.joedev.posweb.pep.rest;
 
 import com.joedev.posweb.pep.entity.InventarioDiario;
 import com.joedev.posweb.pep.services.InventarioDiarioService;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
@@ -17,6 +18,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 
+@RolesAllowed("ADMIN")
 @Path("/api/inventarios-diario")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
