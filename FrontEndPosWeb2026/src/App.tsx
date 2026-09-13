@@ -9,6 +9,10 @@ import { ConfigLayout } from './pages/config/ConfigLayout'
 import { AdminProfilePage } from './pages/config/AdminProfilePage'
 import { UsuariosPage } from './pages/config/UsuariosPage'
 import { UserFormPage } from './pages/config/UserFormPage'
+import { PlatosPage } from './pages/config/PlatosPage'
+import { PlatoFormPage } from './pages/config/PlatoFormPage'
+import { ProductosPage } from './pages/config/ProductosPage'
+import { CategoriasPage } from './pages/config/CategoriasPage'
 
 function App() {
   return (
@@ -23,6 +27,11 @@ function App() {
           <Route path="/configuracion" element={<ConfigLayout />}>
             <Route index element={<Navigate to="perfil" replace />} />
             <Route path="perfil" element={<AdminProfilePage />} />
+            <Route path="platos" element={<PlatosPage />} />
+            <Route path="platos/nuevo" element={<PlatoFormPage />} />
+            <Route path="platos/:id" element={<PlatoFormPage />} />
+            <Route path="productos" element={<ProductosPage />} />
+            <Route path="categorias" element={<CategoriasPage />} />
             <Route path="usuarios" element={<UsuariosPage />} />
             <Route path="usuarios/nuevo" element={<UserFormPage />} />
             <Route path="usuarios/:id" element={<UserFormPage />} />

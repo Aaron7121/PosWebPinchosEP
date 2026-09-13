@@ -21,6 +21,10 @@ public class RecetaPlatoProductoService {
         return repository.findByIdOptional(id).orElse(null);
     }
 
+    public List<RecetaPlatoProducto> listarPorPlato(Integer idPlato) {
+        return repository.listByPlatoId(idPlato);
+    }
+
     public RecetaPlatoProducto crear(RecetaPlatoProducto recetaPlatoProducto) {
         repository.persistAndFlush(recetaPlatoProducto);
         return recetaPlatoProducto;

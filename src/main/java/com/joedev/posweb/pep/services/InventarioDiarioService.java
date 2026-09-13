@@ -2,16 +2,21 @@ package com.joedev.posweb.pep.services;
 
 import com.joedev.posweb.pep.entity.InventarioDiario;
 import com.joedev.posweb.pep.repository.InventarioDiarioRepository;
+import com.joedev.posweb.pep.stream.NotificationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class InventarioDiarioService {
 
     @Inject
     InventarioDiarioRepository repository;
+
+    @Inject
+    NotificationService notifier;
 
     public List<InventarioDiario> listarTodos() {
         return repository.listAll();
@@ -23,6 +28,7 @@ public class InventarioDiarioService {
 
     public InventarioDiario crear(InventarioDiario inventarioDiario) {
         repository.persistAndFlush(inventarioDiario);
+        notifier.emitir("inventario:modificado", Map.of("id", inventarioDiario.getId()));
         return inventarioDiario;
     }
 
@@ -31,10 +37,16 @@ public class InventarioDiarioService {
             return null;
         }
         inventarioDiario.setId(id);
-        return repository.getEntityManager().merge(inventarioDiario);
+        InventarioDiario actualizado = repository.getEntityManager().merge(inventarioDiario);
+        notifier.emitir("inventario:modificado", Map.of("id", id));
+        return actualizado;
     }
 
     public boolean eliminar(Integer id) {
-        return repository.deleteById(id);
+        boolean eliminado = repository.deleteById(id);
+        if (eliminado) {
+            notifier.emitir("inventario:modificado", Map.of("id", id));
+        }
+        return eliminado;
     }
 }

@@ -55,14 +55,15 @@ El layout ocupa el **100% del alto** (`h-screen`) **sin scroll general**; el scr
 +------------+--------------------------------+------------------------+
 ```
 
-### 4.1 Barra Lateral Izquierda (Navegación — 5% a 8%)
+### 4.1 Barra Lateral Izquierda (Navegación)
 
-- Menú vertical **muy estrecho**, solo iconos centrados.
-- Fondo blanco con borde derecho suave: `border-r border-gray-100`.
-- Ítems: **Inicio, Órdenes, Historial, Configuración** (logo arriba, usuario abajo).
-
-> ⚠️ Reconciliar con módulos descritos en la sección 6: los nombres de navegación
-> del diseño de referencia vs. los módulos funcionales.
+- **Escritorio (`>= lg`)**: sidebar fijo `w-64` con **icono + texto** en cada opción
+  (filas de `h-12`, esquinas `rounded-xl`), logo + nombre arriba, tarjeta de usuario
+  (avatar, nombre, rol) y botón "Cerrar sesión" abajo. Fondo blanco, `border-r border-gray-100`.
+- **Móvil (`< lg`)**: el mismo contenido se convierte en **menú deslizante (drawer)**:
+  panel desde la izquierda (`w-72`), overlay oscuro, botón de cerrar; se abre con el
+  botón hamburguesa del `MobileHeader` y se cierra al navegar o tocar el fondo.
+- Ítems: **Nuevo pedido, Configuración, Inventario y caja, Estadísticas**.
 
 ### 4.2 Área Central (Menú de Productos — ~65%)
 
@@ -70,12 +71,15 @@ El layout ocupa el **100% del alto** (`h-screen`) **sin scroll general**; el scr
 - **Filtros de categorías:** fila de botones "píldora" (`rounded-full`) con scroll horizontal. El botón activo con **texto naranja**.
 - **Grid de productos:** CSS Grid responsiva (`grid-cols-2`, `md:grid-cols-3`, `lg:grid-cols-4`) con **scroll vertical independiente**.
 
-### 4.3 Panel Derecho (Resumen de Orden / Carrito — 25% a 30%)
+### 4.3 Panel Derecho (Resumen de Orden / Carrito)
 
 - Fondo blanco, sombra suave a la izquierda: `shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]`.
 - Cabecera con **Número de Mesa** e **ID de Orden**.
 - Lista con scroll vertical: cantidades, nombres, modificadores y precios.
 - **Pie fijo** inferior con totales (Subtotal, Impuestos, Total) y botón grande prominente **"Cobrar" / "Enviar Orden"** en naranja primario.
+- **Escritorio (`>= lg`)**: columna derecha (`w-80`).
+- **Móvil (`< lg`)**: barra fija inferior "Ver pedido · Total $X" que abre el carrito
+  como **hoja inferior (bottom sheet)** de `85vh` con botón de cerrar.
 
 ---
 
@@ -103,7 +107,7 @@ El layout ocupa el **100% del alto** (`h-screen`) **sin scroll general**; el scr
 | Módulo | Estado |
 |--------|--------|
 | Nuevo pedido | Pantalla principal — en construcción |
-| Administración | Pendiente |
+| Configuración | Mi perfil + Usuarios (implementado) |
 | Inventario y caja | Pendiente |
 | Estadísticas | Pendiente |
 

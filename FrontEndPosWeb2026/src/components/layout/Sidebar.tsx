@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { BarChart3, Boxes, LogOut, ReceiptText, Settings } from 'lucide-react'
+import { BarChart3, Boxes, LogOut, ReceiptText, Settings, X } from 'lucide-react'
 import { useAuthStore } from '../../store/auth'
 
 const navItems = [
@@ -9,54 +9,104 @@ const navItems = [
   { to: '/estadisticas', label: 'Estadísticas', icon: BarChart3 },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  open: boolean
+  onClose: () => void
+}
+
+export function Sidebar({ open, onClose }: SidebarProps) {
+  return (
+    <>
+      {/* Sidebar de escritorio */}
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-gray-100 bg-white lg:flex">
+        <SidebarContent />
+      </aside>
+
+      {/* Menú deslizante móvil */}
+      {open && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={onClose}
+            aria-hidden="true"
+          />
+          <aside className="absolute left-0 top-0 flex h-full w-72 flex-col bg-white shadow-lg">
+            <div className="flex items-center justify-between px-4 pt-3">
+              <span className="text-sm font-semibold text-gray-400">Menú</span>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-900"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <SidebarContent onNavigate={onClose} />
+          </aside>
+        </div>
+      )}
+    </>
+  )
+}
+
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
 
   return (
-    <aside className="flex h-full w-20 shrink-0 flex-col items-center border-r border-gray-100 bg-white">
-      <div className="flex h-16 w-full items-center justify-center border-b border-gray-100">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-xl font-bold text-white">
+    <>
+      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-gray-100 px-5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-xl font-bold text-white">
           P
         </span>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-gray-900">PINCHOS</p>
+          <p className="truncate text-xs text-gray-500">El Parqueadero</p>
+        </div>
       </div>
 
-      <nav className="flex flex-1 flex-col items-center gap-2 py-4">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             end={to === '/'}
-            title={label}
+            onClick={onNavigate}
             className={({ isActive }) =>
-              `flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
+              `flex h-12 items-center gap-3 rounded-xl px-4 text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-orange-50 text-orange-500'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`
             }
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="h-5 w-5 shrink-0" />
+            <span className="truncate">{label}</span>
           </NavLink>
         ))}
       </nav>
 
-      <div className="flex w-full flex-col items-center gap-2 border-t border-gray-100 py-4">
-        <div
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white"
-          title={user?.name}
-        >
-          {user?.name?.charAt(0).toUpperCase() ?? 'U'}
+      <div className="shrink-0 border-t border-gray-100 p-3">
+        <div className="flex items-center gap-3 rounded-xl px-2 py-2">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white">
+            {user?.name?.charAt(0).toUpperCase() ?? 'U'}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-gray-900">
+              {user?.name ?? 'Usuario'}
+            </p>
+            <p className="truncate text-xs text-gray-500">{user?.role}</p>
+          </div>
         </div>
         <button
           type="button"
           onClick={logout}
-          title="Cerrar sesión"
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-gray-50 hover:text-red-500"
+          className="flex h-11 w-full items-center gap-3 rounded-xl px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-500"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-5 w-5 shrink-0" />
+          Cerrar sesión
         </button>
       </div>
-    </aside>
+    </>
   )
 }

@@ -33,6 +33,12 @@ public class PlatoResource {
     }
 
     @GET
+    @Path("/categoria/{idCategoria}")
+    public List<Plato> listarPorCategoria(@PathParam("idCategoria") Integer idCategoria) {
+        return service.listarPorCategoria(idCategoria);
+    }
+
+    @GET
     @Path("/{id}")
     public Response obtenerPorId(@PathParam("id") Integer id) {
         Plato plato = service.obtenerPorId(id);

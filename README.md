@@ -1,78 +1,95 @@
-# posweb2026
+# POS Web 2026 — Pinchos el Parqueadero
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+Sistema de punto de venta (POS) para restaurante, pensado para usarse tanto en web como en dispositivos móviles (PWA). Permite gestionar clientes, categorías y platos, pedidos y su detalle, inventario, caja y usuarios con autenticación JWT.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## Arquitectura
 
-## Running the application in dev mode
+**Monolito modular.** Todo el backend vive en una única aplicación desplegable, pero organizado por módulos (paquetes) con responsabilidades claras:
 
-You can run your application in dev mode that enables live coding using:
+```
+com.joedev.posweb.pep
+├── auth        → Login, registro, generación y validación de JWT
+├── entity      → Entidades JPA (Clientes, Pedidos, Inventario, Caja, ...)
+├── repository  → Acceso a datos (Hibernate + Panache)
+├── services    → Lógica de negocio
+├── rest        → Recursos REST (controladores / endpoints)
+└── exception   → Manejo centralizado de errores y DTOs de respuesta
+```
+
+El frontend es una **aplicación client-side** (SPA + PWA) que consume la API REST del backend mediante JSON.
+
+## Backend
+
+Construido con [Quarkus](https://quarkus.io/) (Supersonic Subatomic Java).
+
+- **Lenguaje:** Java 21
+- **Framework:** Quarkus 3.39 (REST + Jackson, Arc/CDI)
+- **Persistencia:** Hibernate ORM con Panache
+- **Base de datos:** PostgreSQL
+- **Migraciones:** Flyway (`src/main/resources/db/migration`)
+- **Seguridad:** SmallRye JWT + jBCrypt (contraseñas hasheadas)
+- **Archivos:** subida de imágenes con `resteasy-reactive-multipart`
+
+### Configuración
+
+El archivo `src/main/resources/application.properties` contiene la configuración de base de datos, Flyway, JWT, CORS y subida de archivos. Ajusta la conexión a PostgreSQL según tu entorno.
+
+### Ejecución en desarrollo
 
 ```shell script
 ./mvnw quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+API disponible en `http://localhost:8080` (Dev UI en `http://localhost:8080/q/dev/`).
 
-## Packaging and running the application
-
-The application can be packaged using:
+### Empaquetado
 
 ```shell script
 ./mvnw package
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+## Frontend
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+Aplicación SPA/PWA client-side ubicada en `FrontEndPosWeb2026/`.
 
-If you want to build an _über-jar_, execute the following command:
+- **Lenguaje:** TypeScript
+- **Framework:** React 19
+- **Build:** Vite
+- **Estilos:** TailwindCSS 4
+- **Navegación:** React Router DOM
+- **Estado:** Zustand
+- **Datos/API:** TanStack React Query
+- **Íconos:** lucide-react
+- **PWA:** vite-plugin-pwa
+- **Lint:** oxlint
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
-
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
-
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+### Ejecución en desarrollo
 
 ```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
+cd FrontEndPosWeb2026
+npm install
+npm run dev
 ```
 
-You can then execute your native executable with: `./target/posweb2026-1.0-SNAPSHOT-runner`
+Disponible en `http://localhost:5173`. Vite hace proxy de `/api` hacia `http://localhost:8080`.
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+### Build
 
-## Related Guides
+```shell script
+npm run build
+```
 
-- Flyway ([guide](https://quarkus.io/guides/flyway)): Handle your database schema migrations
-- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): Simplified JPA/Hibernate data
-  access layer with active record and repository patterns
-- SmallRye JWT ([guide](https://quarkus.io/guides/security-jwt)): Secure your applications with JSON Web Token
-- JDBC Driver - PostgreSQL ([guide](https://quarkus.io/guides/datasource)): Connect to the PostgreSQL database via JDBC
+## Estructura del proyecto
 
-## Provided Code
+```
+posweb2026/
+├── src/                      # Backend Quarkus
+│   ├── main/java/com/joedev/posweb/pep/   # Módulos del monolito
+│   └── main/resources/       # Config, migraciones y claves JWT
+├── FrontEndPosWeb2026/       # Frontend React (SPA + PWA)
+└── pom.xml                   # Dependencias y build del backend
+```
 
-### Hibernate ORM
+## Autenticación y permisos
 
-Create your first JPA entity
-
-[Related guide section...](https://quarkus.io/guides/hibernate-orm)
-
-[Related Hibernate with Panache section...](https://quarkus.io/guides/hibernate-orm-panache)
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+Todo `/api/*` exige token JWT, salvo `/api/auth/login` y `/api/test`. Los archivos subidos (`/uploads/*`) son públicos. El token se firma con `src/main/resources/jwt/privateKey.pem` y se verifica con la clave pública correspondiente.

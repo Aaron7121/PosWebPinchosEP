@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, ShoppingBag, X } from 'lucide-react'
 
 const categories = ['Todo', 'Pinchos', 'Bebidas', 'Extras', 'Postres']
 
@@ -14,6 +14,7 @@ const products = [
 
 export function NewOrderPage() {
   const [category, setCategory] = useState('Todo')
+  const [cartOpen, setCartOpen] = useState(false)
 
   return (
     <div className="flex h-full flex-1 overflow-hidden">
@@ -48,7 +49,7 @@ export function NewOrderPage() {
           ))}
         </div>
 
-        <div className="grid flex-1 auto-rows-min grid-cols-2 gap-4 overflow-y-auto p-6 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid flex-1 auto-rows-min grid-cols-2 gap-4 overflow-y-auto px-6 pt-6 pb-24 md:grid-cols-3 lg:grid-cols-4 lg:pb-6">
           {products.map((p) => (
             <div
               key={p.id}
@@ -77,48 +78,97 @@ export function NewOrderPage() {
         </div>
       </section>
 
-      {/* Panel derecho: resumen de orden */}
-      <aside className="flex w-80 shrink-0 flex-col border-l border-gray-100 bg-white shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
-        <header className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+      {/* Carrito de escritorio */}
+      <aside className="hidden w-80 shrink-0 flex-col border-l border-gray-100 bg-white shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] lg:flex">
+        <OrderPanel />
+      </aside>
+
+      {/* Barra inferior móvil */}
+      <button
+        type="button"
+        onClick={() => setCartOpen(true)}
+        className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between border-t border-gray-100 bg-white px-5 py-3 lg:hidden"
+      >
+        <div className="text-left">
+          <p className="text-xs text-gray-500">Total</p>
+          <p className="text-lg font-bold text-gray-900">$0.00</p>
+        </div>
+        <span className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white">
+          <ShoppingBag className="h-4 w-4" />
+          Ver pedido
+        </span>
+      </button>
+
+      {/* Hoja inferior móvil (bottom sheet) */}
+      {cartOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setCartOpen(false)}
+            aria-hidden="true"
+          />
+          <aside className="absolute inset-x-0 bottom-0 flex h-[85vh] flex-col rounded-t-3xl bg-white shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)]">
+            <OrderPanel onClose={() => setCartOpen(false)} />
+          </aside>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function OrderPanel({ onClose }: { onClose?: () => void }) {
+  return (
+    <div className="flex h-full flex-col">
+      <header className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+        <div className="flex gap-6">
           <div>
             <p className="text-sm text-gray-500">Mesa</p>
             <p className="text-lg font-bold text-gray-900">#12</p>
           </div>
-          <div className="text-right">
+          <div>
             <p className="text-sm text-gray-500">Orden</p>
             <p className="text-lg font-bold text-gray-900">#0042</p>
           </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <p className="text-center text-sm text-gray-400">
-            Agrega productos para comenzar el pedido
-          </p>
         </div>
-
-        <footer className="border-t border-gray-100 px-6 py-4">
-          <div className="mb-4 flex flex-col gap-1 text-sm">
-            <div className="flex justify-between text-gray-500">
-              <span>Subtotal</span>
-              <span>$0.00</span>
-            </div>
-            <div className="flex justify-between text-gray-500">
-              <span>Impuestos</span>
-              <span>$0.00</span>
-            </div>
-            <div className="flex justify-between text-lg font-bold text-gray-900">
-              <span>Total</span>
-              <span>$0.00</span>
-            </div>
-          </div>
+        {onClose && (
           <button
             type="button"
-            className="w-full rounded-xl bg-orange-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-orange-600"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-900"
           >
-            Cobrar
+            <X className="h-5 w-5" />
           </button>
-        </footer>
-      </aside>
+        )}
+      </header>
+
+      <div className="flex-1 overflow-y-auto px-6 py-4">
+        <p className="text-center text-sm text-gray-400">
+          Agrega productos para comenzar el pedido
+        </p>
+      </div>
+
+      <footer className="border-t border-gray-100 px-6 py-4">
+        <div className="mb-4 flex flex-col gap-1 text-sm">
+          <div className="flex justify-between text-gray-500">
+            <span>Subtotal</span>
+            <span>$0.00</span>
+          </div>
+          <div className="flex justify-between text-gray-500">
+            <span>Impuestos</span>
+            <span>$0.00</span>
+          </div>
+          <div className="flex justify-between text-lg font-bold text-gray-900">
+            <span>Total</span>
+            <span>$0.00</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="w-full rounded-xl bg-orange-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-orange-600"
+        >
+          Cobrar
+        </button>
+      </footer>
     </div>
   )
 }

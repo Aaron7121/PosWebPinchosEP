@@ -33,6 +33,12 @@ public class CategoriaPlatoResource {
     }
 
     @GET
+    @Path("/activos")
+    public List<CategoriaPlato> listarActivas() {
+        return service.listarActivas();
+    }
+
+    @GET
     @Path("/{id}")
     public Response obtenerPorId(@PathParam("id") Integer id) {
         CategoriaPlato categoriaPlato = service.obtenerPorId(id);

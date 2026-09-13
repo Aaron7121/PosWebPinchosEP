@@ -33,6 +33,12 @@ public class RecetaPlatoProductoResource {
     }
 
     @GET
+    @Path("/plato/{idPlato}")
+    public List<RecetaPlatoProducto> listarPorPlato(@PathParam("idPlato") Integer idPlato) {
+        return service.listarPorPlato(idPlato);
+    }
+
+    @GET
     @Path("/{id}")
     public Response obtenerPorId(@PathParam("id") Integer id) {
         RecetaPlatoProducto recetaPlatoProducto = service.obtenerPorId(id);

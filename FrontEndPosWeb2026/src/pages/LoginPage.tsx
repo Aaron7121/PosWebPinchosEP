@@ -26,8 +26,8 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-orange-50 px-4">
-      <div className="w-full max-w-sm rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+    <div className="flex min-h-dvh items-center justify-center bg-orange-50 px-4 py-6">
+      <div className="w-full max-w-sm rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500 text-2xl font-bold text-white">
             P
@@ -47,7 +47,7 @@ export function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="correo@ejemplo.com"
-              className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+              className="h-11 rounded-xl border border-gray-200 px-4 text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
             />
           </label>
 
@@ -59,7 +59,7 @@ export function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+              className="h-11 rounded-xl border border-gray-200 px-4 text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
             />
           </label>
 
@@ -74,7 +74,7 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
+            className="mt-2 flex h-11 items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
           >
             <LogIn className="h-4 w-4" />
             {mutation.isPending ? 'Entrando...' : 'Entrar'}

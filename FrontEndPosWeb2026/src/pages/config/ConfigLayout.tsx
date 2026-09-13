@@ -1,12 +1,22 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { UserRound, Users } from 'lucide-react'
-
-const tabs = [
-  { to: '/configuracion/perfil', label: 'Mi perfil', icon: UserRound },
-  { to: '/configuracion/usuarios', label: 'Usuarios', icon: Users },
-]
+import { Package, Tags, UserRound, Users, UtensilsCrossed } from 'lucide-react'
+import { useAuthStore } from '../../store/auth'
 
 export function ConfigLayout() {
+  const role = useAuthStore((s) => s.user?.role)
+
+  const tabs = [
+    { to: '/configuracion/perfil', label: 'Mi perfil', icon: UserRound },
+    { to: '/configuracion/platos', label: 'Platos', icon: UtensilsCrossed },
+    ...(role === 'ADMIN'
+      ? [
+          { to: '/configuracion/productos', label: 'Productos', icon: Package },
+          { to: '/configuracion/categorias', label: 'Categorías', icon: Tags },
+          { to: '/configuracion/usuarios', label: 'Usuarios', icon: Users },
+        ]
+      : []),
+  ]
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <header className="flex h-16 shrink-0 items-center border-b border-gray-100 bg-white px-6">
