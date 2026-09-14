@@ -35,12 +35,8 @@ public class DireccionResource {
 
     @GET
     @Path("/{id}")
-    public Response obtenerPorId(@PathParam("id") Integer id) {
-        Direccion direccion = service.obtenerPorId(id);
-        if (direccion == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(direccion).build();
+    public Direccion obtenerPorId(@PathParam("id") Integer id) {
+        return service.obtenerPorId(id);
     }
 
     @Transactional
@@ -53,20 +49,14 @@ public class DireccionResource {
     @Transactional
     @PUT
     @Path("/{id}")
-    public Response actualizar(@PathParam("id") Integer id, Direccion direccion) {
-        Direccion actualizada = service.actualizar(id, direccion);
-        if (actualizada == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(actualizada).build();
+    public Direccion actualizar(@PathParam("id") Integer id, Direccion direccion) {
+        return service.actualizar(id, direccion);
     }
     @Transactional
     @DELETE
     @Path("/{id}")
     public Response eliminar(@PathParam("id") Integer id) {
-        if (!service.eliminar(id)) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+        service.eliminar(id);
         return Response.noContent().build();
     }
 }

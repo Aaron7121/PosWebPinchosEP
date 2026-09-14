@@ -40,12 +40,8 @@ public class PlatoResource {
 
     @GET
     @Path("/{id}")
-    public Response obtenerPorId(@PathParam("id") Integer id) {
-        Plato plato = service.obtenerPorId(id);
-        if (plato == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(plato).build();
+    public Plato obtenerPorId(@PathParam("id") Integer id) {
+        return service.obtenerPorId(id);
     }
     @Transactional
     @POST
@@ -58,21 +54,15 @@ public class PlatoResource {
     @Transactional
     @PUT
     @Path("/{id}")
-    public Response actualizar(@PathParam("id") Integer id, Plato plato) {
-        Plato actualizado = service.actualizar(id, plato);
-        if (actualizado == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(actualizado).build();
+    public Plato actualizar(@PathParam("id") Integer id, Plato plato) {
+        return service.actualizar(id, plato);
     }
 
     @Transactional
     @DELETE
     @Path("/{id}")
     public Response eliminar(@PathParam("id") Integer id) {
-        if (!service.eliminar(id)) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+        service.eliminar(id);
         return Response.noContent().build();
     }
 }

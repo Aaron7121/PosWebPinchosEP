@@ -1,5 +1,6 @@
 package com.joedev.posweb.pep.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,6 +35,7 @@ public class Usuario {
     @Column(name = "usuario", nullable = false)
     private String usuario;
 
+    @JsonIgnore
     @Column(name = "password", nullable = false)
     private String password;
 
@@ -44,6 +46,7 @@ public class Usuario {
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
 
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_direccion")
     private Direccion direccion;

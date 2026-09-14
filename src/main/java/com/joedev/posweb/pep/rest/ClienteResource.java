@@ -35,12 +35,8 @@ public class ClienteResource {
 
     @GET
     @Path("/{id}")
-    public Response obtenerPorId(@PathParam("id") Integer id) {
-        Cliente cliente = service.obtenerPorId(id);
-        if (cliente == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(cliente).build();
+    public Cliente obtenerPorId(@PathParam("id") Integer id) {
+        return service.obtenerPorId(id);
     }
     @Transactional
     @POST
@@ -51,20 +47,14 @@ public class ClienteResource {
     @Transactional
     @PUT
     @Path("/{id}")
-    public Response actualizar(@PathParam("id") Integer id, Cliente cliente) {
-        Cliente actualizado = service.actualizar(id, cliente);
-        if (actualizado == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(actualizado).build();
+    public Cliente actualizar(@PathParam("id") Integer id, Cliente cliente) {
+        return service.actualizar(id, cliente);
     }
     @Transactional
     @DELETE
     @Path("/{id}")
     public Response eliminar(@PathParam("id") Integer id) {
-        if (!service.eliminar(id)) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+        service.eliminar(id);
         return Response.noContent().build();
     }
 }

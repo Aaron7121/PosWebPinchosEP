@@ -12,10 +12,12 @@ public record UsuarioResponse(
         String usuario,
         String rol,
         Boolean activo,
-        Integer idDireccion) {
+        DireccionResponse direccion) {
 
     public static UsuarioResponse from(Usuario usuario) {
-        Integer idDireccion = usuario.getDireccion() != null ? usuario.getDireccion().getId() : null;
+        DireccionResponse direccion = usuario.getDireccion() != null
+                ? DireccionResponse.from(usuario.getDireccion())
+                : null;
         return new UsuarioResponse(
                 usuario.getId(),
                 usuario.getNombre(),
@@ -26,7 +28,7 @@ public record UsuarioResponse(
                 usuario.getUsuario(),
                 usuario.getRol(),
                 usuario.getActivo(),
-                idDireccion
+                direccion
         );
     }
 }

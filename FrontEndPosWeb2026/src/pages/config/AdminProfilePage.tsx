@@ -34,6 +34,14 @@ function AdminProfileForm({ initial }: { initial: Usuario }) {
   const [cargo, setCargo] = useState(initial.cargo ?? '')
   const [usuario, setUsuario] = useState(initial.usuario ?? '')
   const [password, setPassword] = useState('')
+  const [callePrincipal, setCallePrincipal] = useState(
+    initial.direccion?.callePrincipal ?? '',
+  )
+  const [calleSecundaria, setCalleSecundaria] = useState(
+    initial.direccion?.calleSecundaria ?? '',
+  )
+  const [ciudad, setCiudad] = useState(initial.direccion?.ciudad ?? '')
+  const [sector, setSector] = useState(initial.direccion?.sector ?? '')
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -45,6 +53,12 @@ function AdminProfileForm({ initial }: { initial: Usuario }) {
         correo,
         cargo,
         usuario,
+        direccion: {
+          callePrincipal: callePrincipal || null,
+          calleSecundaria: calleSecundaria || null,
+          ciudad: ciudad || null,
+          sector: sector || null,
+        },
       })
       if (password) {
         await updateUsuarioPassword(userId, { password })
@@ -106,6 +120,31 @@ function AdminProfileForm({ initial }: { initial: Usuario }) {
             onChange={(e) => setUsuario(e.target.value)}
             required
           />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Calle principal"
+              value={callePrincipal}
+              onChange={(e) => setCallePrincipal(e.target.value)}
+            />
+            <Input
+              label="Calle secundaria"
+              value={calleSecundaria}
+              onChange={(e) => setCalleSecundaria(e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Ciudad"
+              value={ciudad}
+              onChange={(e) => setCiudad(e.target.value)}
+            />
+            <Input
+              label="Sector"
+              value={sector}
+              onChange={(e) => setSector(e.target.value)}
+            />
+          </div>
           <Input
             label="Nueva contraseña"
             type="password"

@@ -1,5 +1,6 @@
 package com.joedev.posweb.pep.services;
 
+import com.joedev.posweb.pep.auth.DireccionRequest;
 import com.joedev.posweb.pep.auth.SecurityUtils;
 import com.joedev.posweb.pep.auth.UsuarioRequest;
 import com.joedev.posweb.pep.auth.UsuarioResponse;
@@ -8,6 +9,7 @@ import com.joedev.posweb.pep.entity.Usuario;
 import com.joedev.posweb.pep.exception.ConflictoException;
 import com.joedev.posweb.pep.exception.DatoInvalidoException;
 import com.joedev.posweb.pep.exception.EntidadNoEncontradaException;
+import com.joedev.posweb.pep.repository.DireccionRepository;
 import com.joedev.posweb.pep.repository.UsuarioRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -20,6 +22,9 @@ public class UsuarioService {
 
     @Inject
     UsuarioRepository repository;
+
+    @Inject
+    DireccionRepository direccionRepository;
 
     public List<UsuarioResponse> listarTodos() {
         return repository.listAll().stream().map(UsuarioResponse::from).toList();
@@ -99,13 +104,44 @@ public class UsuarioService {
         if (request.usuario() != null) usuario.setUsuario(request.usuario());
         if (request.rol() != null) usuario.setRol(request.rol());
         if (request.activo() != null) usuario.setActivo(request.activo());
-        if (request.idDireccion() != null) {
-            Direccion direccion = repository.getEntityManager().find(Direccion.class, request.idDireccion());
-            if (direccion == null) {
-                throw new DatoInvalidoException("La dirección con id " + request.idDireccion() + " no existe");
-            }
-            usuario.setDireccion(direccion);
+        aplicarDireccion(usuario, request.direccion());
+    }
+
+    private void aplicarDireccion(Usuario usuario, DireccionRequest request) {
+        if (request == null || usuario == null) {
+            return;
         }
+        if (esVacia(request)) {
+            usuario.setDireccion(null);
+            return;
+        }
+
+        Direccion direccion = usuario.getDireccion();
+        if (direccion == null) {
+            direccion = new Direccion();
+            direccion.setActivo(true);
+        }
+        direccion.setCallePrincipal(blankToNull(request.callePrincipal()));
+        direccion.setCalleSecundaria(blankToNull(request.calleSecundaria()));
+        direccion.setCiudad(blankToNull(request.ciudad()));
+        direccion.setSector(blankToNull(request.sector()));
+        usuario.setDireccion(direccion);
+        direccionRepository.persist(direccion);
+    }
+
+    private boolean esVacia(DireccionRequest request) {
+        return esBlank(request.callePrincipal())
+                && esBlank(request.calleSecundaria())
+                && esBlank(request.ciudad())
+                && esBlank(request.sector());
+    }
+
+    private boolean esBlank(String valor) {
+        return valor == null || valor.isBlank();
+    }
+
+    private String blankToNull(String valor) {
+        return esBlank(valor) ? null : valor.trim();
     }
 
     private void validarDuplicados(Integer exceptoId, UsuarioRequest request) {

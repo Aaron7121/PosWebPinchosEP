@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { NewOrderPage } from './pages/NewOrderPage'
 import { InventoryPage } from './pages/InventoryPage'
+import { PedidosPage } from './pages/PedidosPage'
 import { StatisticsPage } from './pages/StatisticsPage'
 import { ConfigLayout } from './pages/config/ConfigLayout'
 import { AdminProfilePage } from './pages/config/AdminProfilePage'
@@ -22,6 +23,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<NewOrderPage />} />
+          <Route path="/pedidos" element={<PedidosPage />} />
           <Route path="/inventario" element={<InventoryPage />} />
           <Route path="/estadisticas" element={<StatisticsPage />} />
           <Route path="/configuracion" element={<ConfigLayout />}>

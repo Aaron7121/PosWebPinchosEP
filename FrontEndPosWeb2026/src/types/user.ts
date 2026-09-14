@@ -1,3 +1,18 @@
+export interface Direccion {
+  id: number
+  callePrincipal: string | null
+  calleSecundaria: string | null
+  ciudad: string | null
+  sector: string | null
+}
+
+export interface DireccionRequest {
+  callePrincipal?: string | null
+  calleSecundaria?: string | null
+  ciudad?: string | null
+  sector?: string | null
+}
+
 export interface Usuario {
   id: number
   nombre: string
@@ -8,7 +23,7 @@ export interface Usuario {
   usuario: string
   rol: string
   activo: boolean
-  idDireccion: number | null
+  direccion: Direccion | null
 }
 
 export interface UsuarioRequest {
@@ -21,7 +36,7 @@ export interface UsuarioRequest {
   password?: string
   rol?: string
   activo?: boolean
-  idDireccion?: number | null
+  direccion?: DireccionRequest | null
 }
 
 export interface EstadoRequest {

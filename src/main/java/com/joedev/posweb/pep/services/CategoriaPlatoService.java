@@ -1,6 +1,7 @@
 package com.joedev.posweb.pep.services;
 
 import com.joedev.posweb.pep.entity.CategoriaPlato;
+import com.joedev.posweb.pep.exception.EntidadNoEncontradaException;
 import com.joedev.posweb.pep.repository.CategoriaPlatoRepository;
 import com.joedev.posweb.pep.stream.NotificationService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,7 +24,8 @@ public class CategoriaPlatoService {
     }
 
     public CategoriaPlato obtenerPorId(Integer id) {
-        return repository.findByIdOptional(id).orElse(null);
+        return repository.findByIdOptional(id)
+                .orElseThrow(() -> new EntidadNoEncontradaException("La categoría con id " + id + " no existe"));
     }
 
     public List<CategoriaPlato> listarActivas() {
@@ -38,7 +40,7 @@ public class CategoriaPlatoService {
 
     public CategoriaPlato actualizar(Integer id, CategoriaPlato categoriaPlato) {
         if (repository.findByIdOptional(id).isEmpty()) {
-            return null;
+            throw new EntidadNoEncontradaException("La categoría con id " + id + " no existe");
         }
         categoriaPlato.setId(id);
         CategoriaPlato actualizada = repository.getEntityManager().merge(categoriaPlato);
@@ -46,11 +48,10 @@ public class CategoriaPlatoService {
         return actualizada;
     }
 
-    public boolean eliminar(Integer id) {
-        boolean eliminado = repository.deleteById(id);
-        if (eliminado) {
-            notifier.emitir("catalogo:modificado", Map.of("id", id));
+    public void eliminar(Integer id) {
+        if (!repository.deleteById(id)) {
+            throw new EntidadNoEncontradaException("La categoría con id " + id + " no existe");
         }
-        return eliminado;
+        notifier.emitir("catalogo:modificado", Map.of("id", id));
     }
 }

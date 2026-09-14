@@ -40,12 +40,8 @@ public class RecetaPlatoProductoResource {
 
     @GET
     @Path("/{id}")
-    public Response obtenerPorId(@PathParam("id") Integer id) {
-        RecetaPlatoProducto recetaPlatoProducto = service.obtenerPorId(id);
-        if (recetaPlatoProducto == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(recetaPlatoProducto).build();
+    public RecetaPlatoProducto obtenerPorId(@PathParam("id") Integer id) {
+        return service.obtenerPorId(id);
     }
 
     @Transactional
@@ -58,21 +54,15 @@ public class RecetaPlatoProductoResource {
     @Transactional
     @PUT
     @Path("/{id}")
-    public Response actualizar(@PathParam("id") Integer id, RecetaPlatoProducto recetaPlatoProducto) {
-        RecetaPlatoProducto actualizado = service.actualizar(id, recetaPlatoProducto);
-        if (actualizado == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(actualizado).build();
+    public RecetaPlatoProducto actualizar(@PathParam("id") Integer id, RecetaPlatoProducto recetaPlatoProducto) {
+        return service.actualizar(id, recetaPlatoProducto);
     }
 
     @Transactional
     @DELETE
     @Path("/{id}")
     public Response eliminar(@PathParam("id") Integer id) {
-        if (!service.eliminar(id)) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+        service.eliminar(id);
         return Response.noContent().build();
     }
 }

@@ -1,6 +1,7 @@
 package com.joedev.posweb.pep.services;
 
 import com.joedev.posweb.pep.entity.DetallePedido;
+import com.joedev.posweb.pep.exception.EntidadNoEncontradaException;
 import com.joedev.posweb.pep.repository.DetallePedidoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -18,7 +19,8 @@ public class DetallePedidoService {
     }
 
     public DetallePedido obtenerPorId(Integer id) {
-        return repository.findByIdOptional(id).orElse(null);
+        return repository.findByIdOptional(id)
+                .orElseThrow(() -> new EntidadNoEncontradaException("El detalle de pedido con id " + id + " no existe"));
     }
 
     public DetallePedido crear(DetallePedido detallePedido) {
@@ -28,13 +30,15 @@ public class DetallePedidoService {
 
     public DetallePedido actualizar(Integer id, DetallePedido detallePedido) {
         if (repository.findByIdOptional(id).isEmpty()) {
-            return null;
+            throw new EntidadNoEncontradaException("El detalle de pedido con id " + id + " no existe");
         }
         detallePedido.setId(id);
         return repository.getEntityManager().merge(detallePedido);
     }
 
-    public boolean eliminar(Integer id) {
-        return repository.deleteById(id);
+    public void eliminar(Integer id) {
+        if (!repository.deleteById(id)) {
+            throw new EntidadNoEncontradaException("El detalle de pedido con id " + id + " no existe");
+        }
     }
 }

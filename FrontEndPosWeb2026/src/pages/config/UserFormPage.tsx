@@ -43,6 +43,14 @@ function UserForm({ initial, isEdit }: UserFormProps) {
   const [rol, setRol] = useState(initial?.rol ?? ROLES[0])
   const [password, setPassword] = useState('')
   const [activo, setActivo] = useState(initial?.activo ?? true)
+  const [callePrincipal, setCallePrincipal] = useState(
+    initial?.direccion?.callePrincipal ?? '',
+  )
+  const [calleSecundaria, setCalleSecundaria] = useState(
+    initial?.direccion?.calleSecundaria ?? '',
+  )
+  const [ciudad, setCiudad] = useState(initial?.direccion?.ciudad ?? '')
+  const [sector, setSector] = useState(initial?.direccion?.sector ?? '')
 
   const mutation = useMutation({
     mutationFn: (payload: UsuarioRequest) =>
@@ -62,6 +70,12 @@ function UserForm({ initial, isEdit }: UserFormProps) {
       rol,
       password: password || undefined,
       activo,
+      direccion: {
+        callePrincipal: callePrincipal || null,
+        calleSecundaria: calleSecundaria || null,
+        ciudad: ciudad || null,
+        sector: sector || null,
+      },
     })
   }
 
@@ -130,6 +144,31 @@ function UserForm({ initial, isEdit }: UserFormProps) {
             value={cargo}
             onChange={(e) => setCargo(e.target.value)}
           />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Calle principal"
+              value={callePrincipal}
+              onChange={(e) => setCallePrincipal(e.target.value)}
+            />
+            <Input
+              label="Calle secundaria"
+              value={calleSecundaria}
+              onChange={(e) => setCalleSecundaria(e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Ciudad"
+              value={ciudad}
+              onChange={(e) => setCiudad(e.target.value)}
+            />
+            <Input
+              label="Sector"
+              value={sector}
+              onChange={(e) => setSector(e.target.value)}
+            />
+          </div>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-gray-700">Rol</span>

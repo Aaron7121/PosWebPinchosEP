@@ -24,7 +24,7 @@ public class Caja {
     @Column(name = "fecha_cierre")
     private Instant fechaCierre;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_empleado")
     private Usuario idEmpleado;
 

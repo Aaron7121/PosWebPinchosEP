@@ -29,7 +29,7 @@ public class Plato {
     @Column(name = "img", length = Integer.MAX_VALUE)
     private String img;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_categoria")
     private CategoriaPlato idCategoria;
 

@@ -1,6 +1,7 @@
 package com.joedev.posweb.pep.services;
 
 import com.joedev.posweb.pep.entity.Cliente;
+import com.joedev.posweb.pep.exception.EntidadNoEncontradaException;
 import com.joedev.posweb.pep.repository.ClienteRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -18,7 +19,8 @@ public class ClienteService {
     }
 
     public Cliente obtenerPorId(Integer id) {
-        return repository.findByIdOptional(id).orElse(null);
+        return repository.findByIdOptional(id)
+                .orElseThrow(() -> new EntidadNoEncontradaException("El cliente con id " + id + " no existe"));
     }
 
     public Cliente crear(Cliente cliente) {
@@ -28,13 +30,15 @@ public class ClienteService {
 
     public Cliente actualizar(Integer id, Cliente cliente) {
         if (repository.findByIdOptional(id).isEmpty()) {
-            return null;
+            throw new EntidadNoEncontradaException("El cliente con id " + id + " no existe");
         }
         cliente.setId(id);
         return repository.getEntityManager().merge(cliente);
     }
 
-    public boolean eliminar(Integer id) {
-        return repository.deleteById(id);
+    public void eliminar(Integer id) {
+        if (!repository.deleteById(id)) {
+            throw new EntidadNoEncontradaException("El cliente con id " + id + " no existe");
+        }
     }
 }

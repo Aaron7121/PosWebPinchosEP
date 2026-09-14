@@ -34,12 +34,8 @@ public class ProductoResource {
 
     @GET
     @Path("/{id}")
-    public Response obtenerPorId(@PathParam("id") Integer id) {
-        Producto producto = service.obtenerPorId(id);
-        if (producto == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(producto).build();
+    public Producto obtenerPorId(@PathParam("id") Integer id) {
+        return service.obtenerPorId(id);
     }
 
     @Transactional
@@ -52,21 +48,15 @@ public class ProductoResource {
     @Transactional
     @PUT
     @Path("/{id}")
-    public Response actualizar(@PathParam("id") Integer id, Producto producto) {
-        Producto actualizado = service.actualizar(id, producto);
-        if (actualizado == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(actualizado).build();
+    public Producto actualizar(@PathParam("id") Integer id, Producto producto) {
+        return service.actualizar(id, producto);
     }
 
     @Transactional
     @DELETE
     @Path("/{id}")
     public Response eliminar(@PathParam("id") Integer id) {
-        if (!service.eliminar(id)) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+        service.eliminar(id);
         return Response.noContent().build();
     }
 }

@@ -34,12 +34,8 @@ public class DetallePedidoResource {
 
     @GET
     @Path("/{id}")
-    public Response obtenerPorId(@PathParam("id") Integer id) {
-        DetallePedido detallePedido = service.obtenerPorId(id);
-        if (detallePedido == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(detallePedido).build();
+    public DetallePedido obtenerPorId(@PathParam("id") Integer id) {
+        return service.obtenerPorId(id);
     }
 
     @Transactional
@@ -52,21 +48,15 @@ public class DetallePedidoResource {
     @Transactional
     @PUT
     @Path("/{id}")
-    public Response actualizar(@PathParam("id") Integer id, DetallePedido detallePedido) {
-        DetallePedido actualizado = service.actualizar(id, detallePedido);
-        if (actualizado == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(actualizado).build();
+    public DetallePedido actualizar(@PathParam("id") Integer id, DetallePedido detallePedido) {
+        return service.actualizar(id, detallePedido);
     }
 
     @Transactional
     @DELETE
     @Path("/{id}")
     public Response eliminar(@PathParam("id") Integer id) {
-        if (!service.eliminar(id)) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+        service.eliminar(id);
         return Response.noContent().build();
     }
 }

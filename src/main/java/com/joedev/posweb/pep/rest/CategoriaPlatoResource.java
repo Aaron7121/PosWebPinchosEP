@@ -40,12 +40,8 @@ public class CategoriaPlatoResource {
 
     @GET
     @Path("/{id}")
-    public Response obtenerPorId(@PathParam("id") Integer id) {
-        CategoriaPlato categoriaPlato = service.obtenerPorId(id);
-        if (categoriaPlato == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(categoriaPlato).build();
+    public CategoriaPlato obtenerPorId(@PathParam("id") Integer id) {
+        return service.obtenerPorId(id);
     }
 
     @Transactional
@@ -58,20 +54,15 @@ public class CategoriaPlatoResource {
     @Transactional
     @PUT
     @Path("/{id}")
-    public Response actualizar(@PathParam("id") Integer id, CategoriaPlato categoriaPlato) {
-        CategoriaPlato actualizada = service.actualizar(id, categoriaPlato);
-        if (actualizada == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(actualizada).build();
+    public CategoriaPlato actualizar(@PathParam("id") Integer id, CategoriaPlato categoriaPlato) {
+        return service.actualizar(id, categoriaPlato);
     }
+
     @Transactional
     @DELETE
     @Path("/{id}")
     public Response eliminar(@PathParam("id") Integer id) {
-        if (!service.eliminar(id)) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+        service.eliminar(id);
         return Response.noContent().build();
     }
 }

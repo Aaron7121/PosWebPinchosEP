@@ -10,5 +10,5 @@ public record UsuarioRequest(
         String password,
         String rol,
         Boolean activo,
-        Integer idDireccion) {
+        DireccionRequest direccion) {
 }

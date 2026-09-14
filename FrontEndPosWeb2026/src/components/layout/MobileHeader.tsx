@@ -14,10 +14,12 @@ export function MobileHeader({ onMenuClick }: MobileHeaderProps) {
       >
         <Menu className="h-5 w-5" />
       </button>
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-sm font-bold text-white">
-        P
-      </span>
-      <p className="text-sm font-bold text-gray-900">PINCHOS · El Parqueadero</p>
+      <img
+        src="/logo-negocio.png"
+        alt="Pinchos"
+        className="h-8 w-8 shrink-0 rounded-lg object-contain"
+      />
+      <p className="text-sm font-bold text-gray-900">Pinchos · El parqueadero</p>
     </header>
   )
 }

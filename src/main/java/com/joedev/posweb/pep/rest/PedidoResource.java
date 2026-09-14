@@ -1,15 +1,18 @@
 package com.joedev.posweb.pep.rest;
 
+import com.joedev.posweb.pep.dto.EstadoPagoRequest;
+import com.joedev.posweb.pep.dto.EstadoPedidoRequest;
+import com.joedev.posweb.pep.dto.PedidoRequest;
+import com.joedev.posweb.pep.entity.DetallePedido;
 import com.joedev.posweb.pep.entity.Pedido;
 import com.joedev.posweb.pep.services.PedidoService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
-import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -20,7 +23,6 @@ import java.util.List;
 
 @RolesAllowed({"ADMIN", "COLABORADOR"})
 @Path("/api/pedidos")
-
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class PedidoResource {
@@ -35,38 +37,41 @@ public class PedidoResource {
 
     @GET
     @Path("/{id}")
-    public Response obtenerPorId(@PathParam("id") Integer id) {
-        Pedido pedido = service.obtenerPorId(id);
-        if (pedido == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(pedido).build();
+    public Pedido obtenerPorId(@PathParam("id") Integer id) {
+        return service.obtenerPorId(id);
     }
+
+    @GET
+    @Path("/{id}/detalles")
+    public List<DetallePedido> listarDetalles(@PathParam("id") Integer id) {
+        return service.listarDetalles(id);
+    }
+
     @Transactional
     @POST
-    public Response crear(Pedido pedido) {
-        Pedido creado = service.crear(pedido);
+    public Response crear(PedidoRequest request) {
+        Pedido creado = service.crear(request);
         return Response.status(Response.Status.CREATED).entity(creado).build();
     }
 
     @Transactional
-    @PUT
-    @Path("/{id}")
-    public Response actualizar(@PathParam("id") Integer id, Pedido pedido) {
-        Pedido actualizado = service.actualizar(id, pedido);
-        if (actualizado == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(actualizado).build();
+    @PATCH
+    @Path("/{id}/estado")
+    public Response cambiarEstado(@PathParam("id") Integer id, EstadoPedidoRequest request) {
+        return Response.ok(service.cambiarEstado(id, request.estadoPedido())).build();
     }
 
     @Transactional
-    @DELETE
-    @Path("/{id}")
-    public Response eliminar(@PathParam("id") Integer id) {
-        if (!service.eliminar(id)) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.noContent().build();
+    @PATCH
+    @Path("/{id}/pago")
+    public Response cambiarEstadoPago(@PathParam("id") Integer id, EstadoPagoRequest request) {
+        return Response.ok(service.cambiarEstadoPago(id, request.estadoPago())).build();
+    }
+
+    @Transactional
+    @PATCH
+    @Path("/{id}/cancelar")
+    public Response cancelar(@PathParam("id") Integer id) {
+        return Response.ok(service.cancelar(id)).build();
     }
 }

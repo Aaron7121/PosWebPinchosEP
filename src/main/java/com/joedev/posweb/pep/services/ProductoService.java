@@ -1,6 +1,7 @@
 package com.joedev.posweb.pep.services;
 
 import com.joedev.posweb.pep.entity.Producto;
+import com.joedev.posweb.pep.exception.EntidadNoEncontradaException;
 import com.joedev.posweb.pep.repository.ProductoRepository;
 import com.joedev.posweb.pep.stream.NotificationService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,7 +24,8 @@ public class ProductoService {
     }
 
     public Producto obtenerPorId(Integer id) {
-        return repository.findByIdOptional(id).orElse(null);
+        return repository.findByIdOptional(id)
+                .orElseThrow(() -> new EntidadNoEncontradaException("El producto con id " + id + " no existe"));
     }
 
     public Producto crear(Producto producto) {
@@ -34,7 +36,7 @@ public class ProductoService {
 
     public Producto actualizar(Integer id, Producto producto) {
         if (repository.findByIdOptional(id).isEmpty()) {
-            return null;
+            throw new EntidadNoEncontradaException("El producto con id " + id + " no existe");
         }
         producto.setId(id);
         Producto actualizado = repository.getEntityManager().merge(producto);
@@ -42,11 +44,10 @@ public class ProductoService {
         return actualizado;
     }
 
-    public boolean eliminar(Integer id) {
-        boolean eliminado = repository.deleteById(id);
-        if (eliminado) {
-            notifier.emitir("inventario:modificado", Map.of("id", id));
+    public void eliminar(Integer id) {
+        if (!repository.deleteById(id)) {
+            throw new EntidadNoEncontradaException("El producto con id " + id + " no existe");
         }
-        return eliminado;
+        notifier.emitir("inventario:modificado", Map.of("id", id));
     }
 }

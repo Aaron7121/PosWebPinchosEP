@@ -1,9 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { BarChart3, Boxes, LogOut, ReceiptText, Settings, X } from 'lucide-react'
+import { BarChart3, Boxes, ClipboardList, LogOut, ReceiptText, Settings, X } from 'lucide-react'
 import { useAuthStore } from '../../store/auth'
+import logoNegocio from '../../assets/logoNegocio.png'
+
 
 const navItems = [
   { to: '/', label: 'Nuevo pedido', icon: ReceiptText },
+  { to: '/pedidos', label: 'Pedidos', icon: ClipboardList },
   { to: '/configuracion', label: 'Configuración', icon: Settings },
   { to: '/inventario', label: 'Inventario y caja', icon: Boxes },
   { to: '/estadisticas', label: 'Estadísticas', icon: BarChart3 },
@@ -56,12 +59,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       <div className="flex h-16 shrink-0 items-center gap-3 border-b border-gray-100 px-5">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-xl font-bold text-white">
-          P
-        </span>
+        <img
+          src={logoNegocio}
+          alt="Pinchos"
+          className="h-10 w-10 shrink-0 rounded-xl object-contain"
+        />
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-gray-900">PINCHOS</p>
-          <p className="truncate text-xs text-gray-500">El Parqueadero</p>
+          <p className="truncate text-sm font-bold text-gray-900">Pinchos</p>
+          <p className="truncate text-xs text-gray-500">El parqueadero</p>
         </div>
       </div>
 

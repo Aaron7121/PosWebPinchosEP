@@ -29,12 +29,14 @@ export function LoginPage() {
     <div className="flex min-h-dvh items-center justify-center bg-orange-50 px-4 py-6">
       <div className="w-full max-w-sm rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500 text-2xl font-bold text-white">
-            P
-          </div>
+          <img
+            src="/logo-negocio.png"
+            alt="Pinchos"
+            className="h-14 w-14 rounded-2xl object-contain"
+          />
           <div className="text-center">
             <h1 className="text-xl font-bold text-gray-900">Iniciar sesión</h1>
-            <p className="text-sm text-gray-500">Pinchos el Parqueadero</p>
+            <p className="text-sm text-gray-500">Pinchos · El parqueadero</p>
           </div>
         </div>
 

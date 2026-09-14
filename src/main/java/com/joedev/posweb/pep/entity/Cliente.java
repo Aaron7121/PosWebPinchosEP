@@ -25,7 +25,7 @@ public class Cliente {
     @Column(name = "correo", length = 100)
     private String correo;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_direccion")
     private com.joedev.posweb.pep.entity.Direccion idDireccion;
 
