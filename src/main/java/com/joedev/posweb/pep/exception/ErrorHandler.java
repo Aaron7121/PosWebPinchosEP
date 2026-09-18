@@ -4,9 +4,15 @@ import jakarta.persistence.PersistenceException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import org.jboss.logging.Logger;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Provider
 public class ErrorHandler implements ExceptionMapper<Exception> {
+
+    private static final Logger LOG = Logger.getLogger(ErrorHandler.class);
 
     @Override
     public Response toResponse(Exception exception) {
@@ -30,13 +36,29 @@ public class ErrorHandler implements ExceptionMapper<Exception> {
                     .entity(new ErrorResponse(409, "Conflicto", e.getMessage()))
                     .build();
         }
-        if (exception instanceof PersistenceException e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new ErrorResponse(500, "Error de persistencia", e.getMessage()))
+        if (containsPersistenceException(exception)) {
+            LOG.error("Error de persistencia al procesar la solicitud", exception);
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(new ErrorResponse(409, "Conflicto de datos",
+                            "No se pudo guardar la información con los datos proporcionados"))
                     .build();
         }
+        LOG.error("Error interno al procesar la solicitud", exception);
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(new ErrorResponse(500, "Error interno", exception.getMessage()))
+                .entity(new ErrorResponse(500, "Error interno",
+                        "Ocurrió un error interno. Intenta nuevamente más tarde"))
                 .build();
+    }
+
+    private boolean containsPersistenceException(Throwable exception) {
+        Set<Throwable> visited = new HashSet<>();
+        Throwable current = exception;
+        while (current != null && visited.add(current)) {
+            if (current instanceof PersistenceException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }

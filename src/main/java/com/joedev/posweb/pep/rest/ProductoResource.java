@@ -1,5 +1,6 @@
 package com.joedev.posweb.pep.rest;
 
+import com.joedev.posweb.pep.dto.ActivoRequest;
 import com.joedev.posweb.pep.entity.Producto;
 import com.joedev.posweb.pep.services.ProductoService;
 import jakarta.annotation.security.RolesAllowed;
@@ -8,6 +9,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -30,6 +32,12 @@ public class ProductoResource {
     @GET
     public List<Producto> listarTodos() {
         return service.listarTodos();
+    }
+
+    @GET
+    @Path("/activos")
+    public List<Producto> listarActivos() {
+        return service.listarActivos();
     }
 
     @GET
@@ -58,5 +66,12 @@ public class ProductoResource {
     public Response eliminar(@PathParam("id") Integer id) {
         service.eliminar(id);
         return Response.noContent().build();
+    }
+
+    @Transactional
+    @PATCH
+    @Path("/{id}/estado")
+    public Producto cambiarEstado(@PathParam("id") Integer id, ActivoRequest request) {
+        return service.cambiarEstado(id, request.activo());
     }
 }

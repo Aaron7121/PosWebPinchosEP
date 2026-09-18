@@ -4,12 +4,37 @@ const API_URL = import.meta.env.VITE_API_URL ?? '/api'
 
 export class ApiError extends Error {
   status: number
+  error?: string
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, error?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.error = error
   }
+}
+
+async function parseApiError(response: Response): Promise<ApiError> {
+  const body: unknown = await response.json().catch(() => null)
+  if (isApiErrorBody(body)) {
+    return new ApiError(response.status, body.message, body.error)
+  }
+  return new ApiError(
+    response.status,
+    'No se pudo completar la solicitud. Intenta nuevamente más tarde',
+  )
+}
+
+function isApiErrorBody(
+  body: unknown,
+): body is { message: string; error?: string } {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'message' in body &&
+    typeof body.message === 'string' &&
+    body.message.length > 0
+  )
 }
 
 export async function request<T>(
@@ -29,8 +54,7 @@ export async function request<T>(
   }
 
   if (!response.ok) {
-    const body = await response.json().catch(() => null)
-    throw new ApiError(response.status, body?.message ?? response.statusText)
+    throw await parseApiError(response)
   }
 
   if (response.status === 204) return undefined as T
@@ -62,8 +86,7 @@ export async function uploadImage(
   }
 
   if (!response.ok) {
-    const body = await response.json().catch(() => null)
-    throw new ApiError(response.status, body?.message ?? response.statusText)
+    throw await parseApiError(response)
   }
 
   return response.json() as Promise<{ path: string }>

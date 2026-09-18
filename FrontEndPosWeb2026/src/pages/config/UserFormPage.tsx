@@ -42,7 +42,6 @@ function UserForm({ initial, isEdit }: UserFormProps) {
   const [usuario, setUsuario] = useState(initial?.usuario ?? '')
   const [rol, setRol] = useState(initial?.rol ?? ROLES[0])
   const [password, setPassword] = useState('')
-  const [activo, setActivo] = useState(initial?.activo ?? true)
   const [callePrincipal, setCallePrincipal] = useState(
     initial?.direccion?.callePrincipal ?? '',
   )
@@ -69,7 +68,6 @@ function UserForm({ initial, isEdit }: UserFormProps) {
       usuario,
       rol,
       password: password || undefined,
-      activo,
       direccion: {
         callePrincipal: callePrincipal || null,
         calleSecundaria: calleSecundaria || null,
@@ -78,7 +76,6 @@ function UserForm({ initial, isEdit }: UserFormProps) {
       },
     })
   }
-
   return (
     <div className="mx-auto max-w-md">
       <button
@@ -183,16 +180,6 @@ function UserForm({ initial, isEdit }: UserFormProps) {
                 </option>
               ))}
             </select>
-          </label>
-
-          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 px-4 py-2.5 transition-colors hover:bg-gray-50">
-            <input
-              type="checkbox"
-              checked={activo}
-              onChange={(e) => setActivo(e.target.checked)}
-              className="h-4 w-4 accent-orange-500"
-            />
-            <span className="text-sm text-gray-700">Usuario activo</span>
           </label>
 
           {mutation.isError && (

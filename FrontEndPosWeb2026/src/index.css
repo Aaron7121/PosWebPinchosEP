@@ -14,3 +14,44 @@ body {
   margin: 0;
   font-family: var(--font-sans);
 }
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes visto-anim {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  25% {
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+.toast-in {
+  animation: toast-in 0.25s ease;
+}
+
+.visto-anim {
+  animation: visto-anim 1.3s ease forwards;
+}

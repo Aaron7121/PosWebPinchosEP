@@ -1,5 +1,12 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Package, Tags, UserRound, Users, UtensilsCrossed } from 'lucide-react'
+import {
+  ContactRound,
+  Package,
+  Tags,
+  UserRound,
+  Users,
+  UtensilsCrossed,
+} from 'lucide-react'
 import { useAuthStore } from '../../store/auth'
 
 export function ConfigLayout() {
@@ -12,6 +19,7 @@ export function ConfigLayout() {
       ? [
           { to: '/configuracion/productos', label: 'Productos', icon: Package },
           { to: '/configuracion/categorias', label: 'Categorías', icon: Tags },
+          { to: '/configuracion/clientes', label: 'Clientes', icon: ContactRound },
           { to: '/configuracion/usuarios', label: 'Usuarios', icon: Users },
         ]
       : []),

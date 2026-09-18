@@ -2,11 +2,10 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { KeyRound, Pencil, Plus, Trash2, UserRound } from 'lucide-react'
+import { KeyRound, Pencil, Plus, UserX, UserRound } from 'lucide-react'
 import {
   deleteUsuario,
   getUsuarios,
-  updateUsuarioEstado,
   updateUsuarioPassword,
 } from '../../api/user'
 import type { Usuario } from '../../types/user'
@@ -22,22 +21,20 @@ export function UsuariosPage() {
 
   const [resetTarget, setResetTarget] = useState<Usuario | null>(null)
 
-  const estadoMutation = useMutation({
-    mutationFn: ({ id, activo }: { id: number; activo: boolean }) =>
-      updateUsuarioEstado(id, { activo }),
+  const desactivarMutation = useMutation({
+    mutationFn: (id: number) => deleteUsuario(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['usuarios'] }),
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteUsuario,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['usuarios'] }),
-  })
-
-  function handleDelete(usuario: Usuario) {
-    if (window.confirm(`¿Eliminar al usuario "${usuario.nombre}"?`)) {
-      deleteMutation.mutate(usuario.id)
+  function handleDesactivar(usuario: Usuario) {
+    if (window.confirm(`¿Deshabilitar al colaborador "${usuario.nombre}"?`)) {
+      desactivarMutation.mutate(usuario.id)
     }
   }
+
+  const colaboradores = usuarios?.filter(
+    (usuario) => usuario.rol === 'COLABORADOR' && usuario.activo,
+  )
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
@@ -59,9 +56,9 @@ export function UsuariosPage() {
 
       {isLoading ? (
         <p className="py-8 text-center text-sm text-gray-400">Cargando...</p>
-      ) : usuarios && usuarios.length > 0 ? (
+      ) : colaboradores && colaboradores.length > 0 ? (
         <div className="flex flex-col gap-3">
-          {usuarios.map((usuario) => (
+          {colaboradores.map((usuario) => (
             <div
               key={usuario.id}
               className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
@@ -79,27 +76,8 @@ export function UsuariosPage() {
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <span className="hidden rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 sm:block">
-                  {usuario.rol}
+                  Colaborador
                 </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    estadoMutation.mutate({
-                      id: usuario.id,
-                      activo: !usuario.activo,
-                    })
-                  }
-                  title={usuario.activo ? 'Desactivar' : 'Activar'}
-                  className={`relative h-6 w-11 rounded-full transition-colors ${
-                    usuario.activo ? 'bg-green-500' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
-                      usuario.activo ? 'left-[22px]' : 'left-0.5'
-                    }`}
-                  />
-                </button>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <Link
@@ -119,11 +97,12 @@ export function UsuariosPage() {
                 </button>
                 <button
                   type="button"
-                  title="Eliminar"
-                  onClick={() => handleDelete(usuario)}
+                  title="Deshabilitar colaborador"
+                  onClick={() => handleDesactivar(usuario)}
+                  disabled={desactivarMutation.isPending}
                   className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <UserX className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -131,7 +110,15 @@ export function UsuariosPage() {
         </div>
       ) : (
         <p className="py-8 text-center text-sm text-gray-400">
-          No hay usuarios registrados.
+          No hay colaboradores activos.
+        </p>
+      )}
+
+      {desactivarMutation.isError && (
+        <p className="rounded-xl bg-red-50 px-4 py-2 text-sm text-red-600">
+          {desactivarMutation.error instanceof Error
+            ? desactivarMutation.error.message
+            : 'No se pudo deshabilitar el colaborador'}
         </p>
       )}
 

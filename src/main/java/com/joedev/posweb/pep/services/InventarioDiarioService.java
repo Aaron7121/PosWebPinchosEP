@@ -8,6 +8,7 @@ import com.joedev.posweb.pep.entity.Producto;
 import com.joedev.posweb.pep.exception.ConflictoException;
 import com.joedev.posweb.pep.exception.DatoInvalidoException;
 import com.joedev.posweb.pep.exception.EntidadNoEncontradaException;
+import com.joedev.posweb.pep.repository.CajaRepository;
 import com.joedev.posweb.pep.repository.InventarioDiarioRepository;
 import com.joedev.posweb.pep.repository.MovInventarioRepository;
 import com.joedev.posweb.pep.repository.ProductoRepository;
@@ -19,6 +20,7 @@ import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,9 @@ public class InventarioDiarioService {
 
     @Inject
     InventarioDiarioRepository repository;
+
+    @Inject
+    CajaRepository cajaRepository;
 
     @Inject
     MovInventarioRepository movRepository;
@@ -55,11 +60,26 @@ public class InventarioDiarioService {
                 .orElseThrow(() -> new EntidadNoEncontradaException("El registro de inventario con id " + id + " no existe"));
     }
 
-    @Transactional
-    public List<InventarioDiario> registrarLote(LocalDate fecha, List<InventarioItemRequest> items) {
-        if (fecha == null) {
+    public static void validarFechaCajaInventario(LocalDate fechaInventario, LocalDate fechaCaja) {
+        if (fechaInventario == null) {
             throw new DatoInvalidoException("La fecha es obligatoria");
         }
+
+        if (fechaCaja == null) {
+            if (!fechaInventario.equals(LocalDate.now())) {
+                throw new ConflictoException("El inventario debe registrarse para la fecha actual antes de abrir la caja");
+            }
+            return;
+        }
+
+        if (!fechaInventario.equals(fechaCaja)) {
+            throw new ConflictoException("El inventario debe corresponder a la fecha de la caja abierta: " + fechaCaja);
+        }
+    }
+
+    @Transactional
+    public List<InventarioDiario> registrarLote(LocalDate fecha, List<InventarioItemRequest> items) {
+        validarFechaSegunCajaActiva(fecha);
         if (items == null || items.isEmpty()) {
             throw new DatoInvalidoException("Debe enviar al menos un producto para registrar el inventario");
         }
@@ -95,7 +115,7 @@ public class InventarioDiarioService {
 
     @Transactional
     public InventarioDiario registrarEntrada(LocalDate fecha, AjusteInventarioRequest request) {
-        validarFecha(fecha);
+        validarFechaSegunCajaActiva(fecha);
         Producto producto = validarProducto(request.idProducto());
         BigDecimal cantidad = validarCantidad(request.cantidad(), "entrada");
         InventarioDiario registro = aplicarEntrada(fecha, producto, cantidad);
@@ -106,7 +126,7 @@ public class InventarioDiarioService {
 
     @Transactional
     public List<InventarioDiario> registrarEntradaLote(LocalDate fecha, List<AjusteInventarioRequest> items) {
-        validarFecha(fecha);
+        validarFechaSegunCajaActiva(fecha);
         if (items == null || items.isEmpty()) {
             throw new DatoInvalidoException("Debe enviar al menos un producto");
         }
@@ -123,7 +143,7 @@ public class InventarioDiarioService {
 
     @Transactional
     public InventarioDiario registrarSalida(LocalDate fecha, AjusteInventarioRequest request) {
-        validarFecha(fecha);
+        validarFechaSegunCajaActiva(fecha);
         Producto producto = validarProducto(request.idProducto());
         BigDecimal cantidad = validarCantidad(request.cantidad(), "salida");
         InventarioDiario registro = aplicarSalida(fecha, producto, cantidad);
@@ -134,7 +154,7 @@ public class InventarioDiarioService {
 
     @Transactional
     public List<InventarioDiario> registrarSalidaLote(LocalDate fecha, List<AjusteInventarioRequest> items) {
-        validarFecha(fecha);
+        validarFechaSegunCajaActiva(fecha);
         if (items == null || items.isEmpty()) {
             throw new DatoInvalidoException("Debe enviar al menos un producto");
         }
@@ -153,6 +173,14 @@ public class InventarioDiarioService {
         if (fecha == null) {
             throw new DatoInvalidoException("La fecha es obligatoria");
         }
+    }
+
+    private void validarFechaSegunCajaActiva(LocalDate fecha) {
+        validarFecha(fecha);
+        LocalDate fechaCaja = cajaRepository.findAbierta()
+                .map(caja -> caja.getFechaApertura().atZone(ZoneId.systemDefault()).toLocalDate())
+                .orElse(null);
+        validarFechaCajaInventario(fecha, fechaCaja);
     }
 
     private Producto validarProducto(Integer idProducto) {

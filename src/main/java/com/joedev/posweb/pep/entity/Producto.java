@@ -9,6 +9,7 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 
@@ -34,5 +35,9 @@ public class Producto {
 
     @Column(name = "stock_minimo", precision = 10, scale = 2)
     private BigDecimal stockMinimo;
+
+    @ColumnDefault("true")
+    @Column(name = "activo")
+    private Boolean activo;
 
 }

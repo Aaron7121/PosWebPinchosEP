@@ -1,9 +1,12 @@
 import { useRef, useState } from 'react'
-import type { SyntheticEvent } from 'react'
+import type { PointerEvent, SyntheticEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
   Banknote,
+  ChevronDown,
+  ChevronRight,
+  Layers3,
   Minus,
   Plus,
   Search,
@@ -13,17 +16,68 @@ import {
 import { getCajaAbierta } from '../api/caja'
 import {
   getCategoriasActivas,
-  getPlatos,
-  getPlatosByCategoria,
+  getPlatosActivos,
 } from '../api/catalogo'
-import { cambiarEstadoPago, createPedido } from '../api/pedidos'
+import { createPedido } from '../api/pedidos'
 import type { Plato } from '../types/catalogo'
+import type { Pedido } from '../types/pos'
 import { formatCurrency } from '../utils/format'
 import { uuid } from '../utils/uuid'
+import { CobroModal } from '../components/ui/CobroModal'
 
 interface CartItem {
   plato: Plato
   cantidad: number
+}
+
+function PlatoCard({
+  plato,
+  onAdd,
+  destacado = false,
+}: {
+  plato: Plato
+  onAdd: (plato: Plato) => void
+  destacado?: boolean
+}) {
+  return (
+    <div
+      className={`flex flex-col rounded-3xl border bg-white transition-all hover:-translate-y-1 hover:shadow-md ${
+        destacado
+          ? 'border-2 border-orange-400 shadow-[0_0_0_1px_rgba(251,146,60,0.15)]'
+          : 'border-gray-100'
+      }`}
+    >
+      {plato.img ? (
+        <img
+          src={plato.img}
+          alt={plato.nombre}
+          className="h-28 rounded-t-3xl object-cover"
+        />
+      ) : (
+        <div className="flex h-28 items-center justify-center rounded-t-3xl bg-orange-100 text-3xl font-bold text-orange-300">
+          {plato.nombre.charAt(0).toUpperCase()}
+        </div>
+      )}
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="text-lg font-bold text-gray-900">{plato.nombre}</h3>
+        <p className="line-clamp-2 text-sm text-gray-500">
+          {plato.descripcion ?? 'Sin descripción'}
+        </p>
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-xl font-bold text-gray-900">
+            {formatCurrency(plato.precio)}
+          </span>
+          <button
+            type="button"
+            onClick={() => onAdd(plato)}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-white transition-colors hover:bg-orange-600"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function NewOrderPage() {
@@ -32,6 +86,7 @@ export function NewOrderPage() {
     queryKey: ['cajas', 'abierta'],
     queryFn: getCajaAbierta,
     retry: false,
+    refetchInterval: 15_000,
   })
 
   if (isLoading) {
@@ -72,13 +127,20 @@ export function NewOrderPage() {
 function OrderPOS() {
   const queryClient = useQueryClient()
   const [categoryId, setCategoryId] = useState<number | null>(null)
+  const [expandedSubcategories, setExpandedSubcategories] = useState<Set<number>>(
+    new Set(),
+  )
   const [busqueda, setBusqueda] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
   const [tipoServicio, setTipoServicio] = useState('MESA')
   const [numMesa, setNumMesa] = useState('')
   const [comentario, setComentario] = useState('')
   const [cartOpen, setCartOpen] = useState(false)
+  const [cartDragOffset, setCartDragOffset] = useState(0)
   const idempotencyKeyRef = useRef<string | undefined>(undefined)
+  const cartBarStartYRef = useRef<number | null>(null)
+  const cartSheetStartYRef = useRef<number | null>(null)
+  const [pedidoACobrar, setPedidoACobrar] = useState<Pedido | null>(null)
 
   const { data: categorias } = useQuery({
     queryKey: ['categorias'],
@@ -87,13 +149,24 @@ function OrderPOS() {
 
   const { data: platos, isLoading } = useQuery({
     queryKey: ['platos', categoryId],
-    queryFn: () =>
-      categoryId == null ? getPlatos() : getPlatosByCategoria(categoryId),
+    queryFn: getPlatosActivos,
   })
 
-  const platosFiltrados = (platos ?? []).filter((p) =>
-    p.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()),
+  const categoriasRaiz = (categorias ?? []).filter(
+    (categoria) => categoria.categoriaPadre == null,
   )
+  const subcategorias = (categorias ?? []).filter(
+    (categoria) => categoria.categoriaPadre?.id === categoryId,
+  )
+  const platosDeCategoria = (id: number | null) =>
+    (platos ?? []).filter((plato) => plato.idCategoria?.id === id)
+
+  const coincideBusqueda = (p: Plato) =>
+    p.nombre.toLowerCase().includes(busqueda.trim().toLowerCase())
+  const platosDirectos =
+    categoryId == null
+      ? (platos ?? []).filter(coincideBusqueda)
+      : platosDeCategoria(categoryId).filter(coincideBusqueda)
 
   const total = cart.reduce(
     (suma, item) => suma + (item.plato.precio ?? 0) * item.cantidad,
@@ -121,36 +194,92 @@ function OrderPOS() {
   }
 
   const mutation = useMutation({
-    mutationFn: async ({ pagar }: { pagar: boolean }) => {
+    mutationFn: async (_variables: { cobrar: boolean }) => {
       if (!idempotencyKeyRef.current) {
         idempotencyKeyRef.current = uuid()
       }
-      const pedido = await createPedido({
+      return createPedido({
         tipoServicio,
         numMesa: numMesa === '' ? undefined : Number(numMesa),
         comentario: comentario || undefined,
         idempotencyKey: idempotencyKeyRef.current,
         detalles: cart.map((i) => ({ idPlato: i.plato.id, cantidad: i.cantidad })),
       })
-      if (pagar) {
-        await cambiarEstadoPago(pedido.id, 'PAGADO')
-      }
-      return pedido
     },
-    onSuccess: () => {
+    onSuccess: (pedido, variables) => {
       idempotencyKeyRef.current = undefined
       queryClient.invalidateQueries({ queryKey: ['pedidos'] })
-      setCart([])
-      setNumMesa('')
-      setComentario('')
-      setCartOpen(false)
+      if (variables.cobrar) {
+        setPedidoACobrar(pedido)
+      } else {
+        setCart([])
+        setNumMesa('')
+        setComentario('')
+        setCartOpen(false)
+      }
     },
   })
 
-  function handleCobrar(e: SyntheticEvent, pagar: boolean) {
+  function handleCobrar(e: SyntheticEvent, cobrar: boolean) {
     e.preventDefault()
     if (cart.length === 0) return
-    mutation.mutate({ pagar })
+    mutation.mutate({ cobrar })
+  }
+
+  function cerrarCobro() {
+    setCart([])
+    setNumMesa('')
+    setComentario('')
+    setCartOpen(false)
+    setPedidoACobrar(null)
+  }
+
+  function handleCartBarPointerDown(event: PointerEvent<HTMLButtonElement>) {
+    cartBarStartYRef.current = event.clientY
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  function handleCartBarPointerUp(event: PointerEvent<HTMLButtonElement>) {
+    const startY = cartBarStartYRef.current
+    cartBarStartYRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    if (startY !== null && startY - event.clientY > 60) {
+      setCartOpen(true)
+    }
+  }
+
+  function handleCartSheetPointerDown(event: PointerEvent<HTMLDivElement>) {
+    cartSheetStartYRef.current = event.clientY
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  function handleCartSheetPointerMove(event: PointerEvent<HTMLDivElement>) {
+    const startY = cartSheetStartYRef.current
+    if (startY !== null) {
+      setCartDragOffset(Math.max(0, event.clientY - startY))
+    }
+  }
+
+  function handleCartSheetPointerUp(event: PointerEvent<HTMLDivElement>) {
+    const startY = cartSheetStartYRef.current
+    cartSheetStartYRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    if (startY !== null && event.clientY - startY > 100) {
+      setCartOpen(false)
+    }
+    setCartDragOffset(0)
+  }
+
+  function cancelCartSheetDrag(event: PointerEvent<HTMLDivElement>) {
+    cartSheetStartYRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    setCartDragOffset(0)
   }
 
   const panelProps = {
@@ -165,7 +294,6 @@ function OrderPOS() {
     onTipoServicioChange: setTipoServicio,
     onNumMesaChange: setNumMesa,
     onComentarioChange: setComentario,
-    onCobrar: (pagar: boolean) => mutation.mutate({ pagar }),
   }
 
   return (
@@ -186,7 +314,7 @@ function OrderPOS() {
           </div>
         </header>
 
-        <div className="flex items-center gap-2 overflow-x-auto border-b border-gray-100 bg-white px-6 py-3">
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-white px-6 py-3">
           <button
             type="button"
             onClick={() => setCategoryId(null)}
@@ -198,7 +326,7 @@ function OrderPOS() {
           >
             Todo
           </button>
-          {categorias?.map((categoria) => (
+          {categoriasRaiz.map((categoria) => (
             <button
               key={categoria.id}
               type="button"
@@ -219,47 +347,97 @@ function OrderPOS() {
             <p className="col-span-full py-8 text-center text-sm text-gray-400">
               Cargando...
             </p>
-          ) : platosFiltrados.length === 0 ? (
+          ) : categoryId != null && subcategorias.length === 0 && platosDirectos.length === 0 ? (
             <p className="col-span-full py-8 text-center text-sm text-gray-400">
               No hay platos para mostrar.
             </p>
           ) : (
-            platosFiltrados.map((p) => (
-              <div
-                key={p.id}
-                className="flex flex-col rounded-3xl border border-gray-100 bg-white transition-all hover:-translate-y-1 hover:shadow-md"
-              >
-                {p.img ? (
-                  <img
-                    src={p.img}
-                    alt={p.nombre}
-                    className="h-28 rounded-t-3xl object-cover"
-                  />
-                ) : (
-                  <div className="flex h-28 items-center justify-center rounded-t-3xl bg-orange-100 text-3xl font-bold text-orange-300">
-                    {p.nombre.charAt(0).toUpperCase()}
+            <>
+              {subcategorias.map((categoria) => {
+                const expanded = expandedSubcategories.has(categoria.id)
+                const platosSubcategoria = platosDeCategoria(categoria.id).filter(
+                  coincideBusqueda,
+                )
+
+                return (
+                  <div key={categoria.id} className="contents">
+                    <div className="flex flex-col overflow-hidden rounded-3xl border border-orange-200 bg-orange-50 text-left transition-all hover:border-orange-300 hover:bg-orange-100 hover:shadow-md">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedSubcategories((prev) => {
+                            const next = new Set(prev)
+                            if (next.has(categoria.id)) next.delete(categoria.id)
+                            else next.add(categoria.id)
+                            return next
+                          })
+                        }
+                        className="group relative flex min-h-40 flex-col items-start justify-between p-5 text-left"
+                      >
+                        <span className="absolute right-4 top-4 rounded-full border border-orange-200 bg-white/80 px-2.5 py-1 text-[10px] font-bold tracking-wide text-orange-700">
+                          Subcategoría
+                        </span>
+                        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-sm transition-transform group-hover:scale-105">
+                          {expanded ? (
+                            <ChevronDown className="h-5 w-5" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5" />
+                          )}
+                        </span>
+                        <span className="mt-6">
+                          <span className="flex items-center gap-2 text-lg font-bold text-sky-950">
+                            <Layers3 className="h-4 w-4 text-orange-600" />
+                            {categoria.nombre}
+                          </span>
+                          <span className="mt-1 block text-sm text-orange-700/80">
+                            {platosSubcategoria.length} plato
+                            {platosSubcategoria.length === 1 ? '' : 's'}
+                          </span>
+                        </span>
+                      </button>
+                      {expanded && (
+                        <div className="border-t border-orange-200/80 px-3 pb-3">
+                          {platosSubcategoria.length === 0 ? (
+                            <p className="px-2 pt-3 text-sm text-orange-700/70">
+                              No hay platos disponibles.
+                            </p>
+                          ) : (
+                            <div className="flex flex-col gap-2 pt-3">
+                              {platosSubcategoria.map((plato) => (
+                                <div
+                                  key={plato.id}
+                                  className="flex items-center gap-3 rounded-2xl border border-orange-100 bg-white px-3 py-2.5"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-semibold text-gray-900">
+                                      {plato.nombre}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      {formatCurrency(plato.precio)}
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => addItem(plato)}
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white transition-colors hover:bg-orange-600"
+                                    aria-label={`Agregar ${plato.nombre}`}
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-                <div className="flex flex-1 flex-col p-4">
-                  <h3 className="text-lg font-bold text-gray-900">{p.nombre}</h3>
-                  <p className="text-sm text-gray-500 line-clamp-2">
-                    {p.descripcion ?? 'Sin descripción'}
-                  </p>
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-xl font-bold text-gray-900">
-                      {formatCurrency(p.precio)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => addItem(p)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-white transition-colors hover:bg-orange-600"
-                    >
-                      <Plus className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
+                )
+              })}
+              {platosDirectos.map((p) => (
+                <PlatoCard key={p.id} plato={p} onAdd={addItem} />
+              ))}
+            </>
           )}
         </div>
       </section>
@@ -277,7 +455,9 @@ function OrderPOS() {
       <button
         type="button"
         onClick={() => setCartOpen(true)}
-        className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between border-t border-gray-100 bg-white px-5 py-3 lg:hidden"
+        onPointerDown={handleCartBarPointerDown}
+        onPointerUp={handleCartBarPointerUp}
+        className="fixed inset-x-0 bottom-0 z-30 flex touch-none items-center justify-between border-t border-gray-100 bg-white px-5 py-3 lg:hidden"
       >
         <ShoppingCartTotal total={total} count={cart.length} />
         <span className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white">
@@ -294,14 +474,32 @@ function OrderPOS() {
             onClick={() => setCartOpen(false)}
             aria-hidden="true"
           />
-          <aside className="absolute inset-x-0 bottom-0 flex h-[85vh] flex-col rounded-t-3xl bg-white shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)]">
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Carrito del pedido"
+            className="absolute inset-x-0 bottom-0 flex h-[85vh] flex-col rounded-t-3xl bg-white shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)] transition-transform duration-200 motion-reduce:transition-none"
+            style={{ transform: `translateY(${cartDragOffset}px)` }}
+          >
             <OrderPanel
               {...panelProps}
               onClose={() => setCartOpen(false)}
               onSubmit={handleCobrar}
+              onDragStart={handleCartSheetPointerDown}
+              onDragMove={handleCartSheetPointerMove}
+              onDragEnd={handleCartSheetPointerUp}
+              onDragCancel={cancelCartSheetDrag}
             />
           </aside>
         </div>
+      )}
+
+      {pedidoACobrar && (
+        <CobroModal
+          pedido={pedidoACobrar}
+          onClose={() => setPedidoACobrar(null)}
+          onPaid={cerrarCobro}
+        />
       )}
     </div>
   )
@@ -327,6 +525,10 @@ interface OrderPanelProps {
   isPending: boolean
   error: unknown
   onClose?: () => void
+  onDragStart?: (event: PointerEvent<HTMLDivElement>) => void
+  onDragMove?: (event: PointerEvent<HTMLDivElement>) => void
+  onDragEnd?: (event: PointerEvent<HTMLDivElement>) => void
+  onDragCancel?: (event: PointerEvent<HTMLDivElement>) => void
   onSetCantidad: (platoId: number, cantidad: number) => void
   onTipoServicioChange: (v: string) => void
   onNumMesaChange: (v: string) => void
@@ -343,6 +545,10 @@ function OrderPanel({
   isPending,
   error,
   onClose,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
+  onDragCancel,
   onSetCantidad,
   onTipoServicioChange,
   onNumMesaChange,
@@ -354,7 +560,20 @@ function OrderPanel({
   return (
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-        <div className="flex gap-6">
+        <div
+          className="flex min-w-0 flex-1 touch-none items-center gap-4"
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragCancel}
+        >
+          {onClose && (
+            <span
+              className="h-1.5 w-12 shrink-0 rounded-full bg-gray-200 lg:hidden"
+              aria-hidden="true"
+            />
+          )}
+          <div className="flex gap-6">
           <div>
             <p className="text-sm text-gray-500">Productos</p>
             <p className="text-lg font-bold text-gray-900">{cart.length}</p>
@@ -364,6 +583,7 @@ function OrderPanel({
             <p className="text-lg font-bold text-gray-900">
               {formatCurrency(total)}
             </p>
+          </div>
           </div>
         </div>
         {onClose && (
@@ -472,6 +692,10 @@ function OrderPanel({
           </p>
         ) : null}
 
+        <div className="mb-1 flex justify-between text-sm text-gray-500">
+          <span>Subtotal</span>
+          <span>{formatCurrency(total)}</span>
+        </div>
         <div className="mb-1 flex justify-between text-lg font-bold text-gray-900">
           <span>Total</span>
           <span>{formatCurrency(total)}</span>

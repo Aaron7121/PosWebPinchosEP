@@ -5,10 +5,32 @@ import { Pencil, Plus, Trash2, UtensilsCrossed } from 'lucide-react'
 import {
   deletePlato,
   getCategorias,
-  getPlatos,
+  getPlatosActivos,
   getPlatosByCategoria,
 } from '../../api/catalogo'
-import type { Plato } from '../../types/catalogo'
+import type { CategoriaPlato, Plato } from '../../types/catalogo'
+
+function rutaCategoria(
+  categoria: CategoriaPlato | null,
+  categorias: CategoriaPlato[],
+) {
+  if (!categoria) return 'Sin categoría'
+
+  const porId = new Map(categorias.map((item) => [item.id, item]))
+  const partes: string[] = []
+  const visitados = new Set<number>()
+  let actual: CategoriaPlato | null = categoria
+
+  while (actual && !visitados.has(actual.id)) {
+    visitados.add(actual.id)
+    partes.unshift(actual.nombre)
+    actual = actual.categoriaPadre?.id
+      ? porId.get(actual.categoriaPadre.id) ?? actual.categoriaPadre
+      : null
+  }
+
+  return partes.join(' / ')
+}
 
 export function PlatosPage() {
   const queryClient = useQueryClient()
@@ -22,7 +44,9 @@ export function PlatosPage() {
   const { data: platos, isLoading } = useQuery({
     queryKey: ['platos', categoriaId],
     queryFn: () =>
-      categoriaId == null ? getPlatos() : getPlatosByCategoria(categoriaId),
+      categoriaId == null
+        ? getPlatosActivos()
+        : getPlatosByCategoria(categoriaId),
   })
 
   const deleteMutation = useMutation({
@@ -105,7 +129,7 @@ export function PlatosPage() {
               <div className="flex flex-1 flex-col p-4">
                 <h3 className="font-bold text-gray-900">{plato.nombre}</h3>
                 <p className="text-xs text-gray-400">
-                  {plato.idCategoria?.nombre ?? 'Sin categoría'}
+                  {rutaCategoria(plato.idCategoria, categorias ?? [])}
                 </p>
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-lg font-bold text-gray-900">

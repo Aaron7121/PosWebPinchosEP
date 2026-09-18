@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { BarChart3, Boxes, ClipboardList, LogOut, ReceiptText, Settings, X } from 'lucide-react'
 import { useAuthStore } from '../../store/auth'
+import { SoundToggle } from '../ui/SoundToggle'
 import logoNegocio from '../../assets/logoNegocio.png'
 
 
@@ -103,6 +104,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <p className="truncate text-xs text-gray-500">{user?.role}</p>
           </div>
         </div>
+        <SoundToggle
+          showLabel
+          className="flex h-11 w-full items-center gap-3 rounded-xl px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+        />
         <button
           type="button"
           onClick={logout}

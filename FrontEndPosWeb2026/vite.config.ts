@@ -10,6 +10,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // Incluye los audios en el precache para que suenen sin conexión
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,mp3,wav,ogg}'],
+      },
       manifest: {
         name: 'POS Pinchos el Parqueadero',
         short_name: 'POS',

@@ -1,4 +1,6 @@
 import { Menu } from 'lucide-react'
+import logoNegocio from '../../assets/logoNegocio.png'
+import { SoundToggle } from '../ui/SoundToggle'
 
 interface MobileHeaderProps {
   onMenuClick: () => void
@@ -15,11 +17,12 @@ export function MobileHeader({ onMenuClick }: MobileHeaderProps) {
         <Menu className="h-5 w-5" />
       </button>
       <img
-        src="/logo-negocio.png"
+        src={logoNegocio}
         alt="Pinchos"
         className="h-8 w-8 shrink-0 rounded-lg object-contain"
       />
       <p className="text-sm font-bold text-gray-900">Pinchos · El parqueadero</p>
+      <SoundToggle className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-600 transition-colors hover:bg-gray-50" />
     </header>
   )
 }

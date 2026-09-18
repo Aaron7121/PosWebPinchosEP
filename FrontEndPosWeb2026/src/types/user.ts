@@ -39,10 +39,6 @@ export interface UsuarioRequest {
   direccion?: DireccionRequest | null
 }
 
-export interface EstadoRequest {
-  activo: boolean
-}
-
 export interface PasswordRequest {
   password: string
 }

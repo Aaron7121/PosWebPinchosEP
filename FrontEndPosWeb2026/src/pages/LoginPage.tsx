@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import { LogIn } from 'lucide-react'
 import { login } from '../api/auth'
 import { useAuthStore } from '../store/auth'
+import logoNegocio from '../assets/logoNegocio.png'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -30,7 +31,7 @@ export function LoginPage() {
       <div className="w-full max-w-sm rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
         <div className="mb-8 flex flex-col items-center gap-3">
           <img
-            src="/logo-negocio.png"
+            src={logoNegocio}
             alt="Pinchos"
             className="h-14 w-14 rounded-2xl object-contain"
           />

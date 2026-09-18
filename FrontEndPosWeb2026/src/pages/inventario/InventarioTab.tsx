@@ -1,17 +1,9 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
-import {
-  ArrowLeftRight,
-  Banknote,
-  Boxes,
-  CalendarDays,
-  Minus,
-  Plus,
-} from 'lucide-react'
-import { getProductos } from '../api/catalogo'
-import { abrirCaja, cerrarCaja, getCajaAbierta, getCajas } from '../api/caja'
+import { CalendarDays, Minus, Plus } from 'lucide-react'
+import { getCajaAbierta } from '../../api/caja'
+import { getProductos } from '../../api/catalogo'
 import {
   getInventario,
   getUltimoInventario,
@@ -20,78 +12,23 @@ import {
   registrarInventarioLote,
   registrarSalida,
   registrarSalidaLote,
-} from '../api/inventario'
-import { getMovimientos } from '../api/movimientos'
-import type {
-  Caja,
-  InventarioDiario,
-  MovInventario,
-} from '../types/pos'
-import type {
-  CajaAbrirRequest,
-  CajaCerrarRequest,
-  InventarioItemRequest,
-} from '../types/pos'
-import { formatCurrency, formatFecha, formatFechaCorta, todayISO } from '../utils/format'
-import { Modal } from '../components/ui/Modal'
+} from '../../api/inventario'
+import type { InventarioDiario, InventarioItemRequest } from '../../types/pos'
+import { formatFechaCorta, todayISO } from '../../utils/format'
+import { Modal } from '../../components/ui/Modal'
+import { CampoMonto } from './CampoMonto'
 
-type Tab = 'inventario' | 'caja' | 'movimientos'
+export function InventarioTab() {
+  const { data: cajaAbierta } = useQuery({
+    queryKey: ['cajas', 'abierta'],
+    queryFn: getCajaAbierta,
+    retry: false,
+  })
 
-export function InventoryPage() {
-  const [searchParams] = useSearchParams()
-  const paramTab = searchParams.get('tab')
-  const [tab, setTab] = useState<Tab>(
-    paramTab === 'caja'
-      ? 'caja'
-      : paramTab === 'movimientos'
-        ? 'movimientos'
-        : 'inventario',
-  )
+  const fecha = cajaAbierta
+    ? new Date(cajaAbierta.fechaApertura).toISOString().slice(0, 10)
+    : todayISO()
 
-  const tabs: { id: Tab; label: string; icon: typeof Boxes }[] = [
-    { id: 'inventario', label: 'Inventario', icon: Boxes },
-    { id: 'caja', label: 'Caja', icon: Banknote },
-    { id: 'movimientos', label: 'Movimientos', icon: ArrowLeftRight },
-  ]
-
-  return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <header className="flex h-16 shrink-0 items-center border-b border-gray-100 bg-white px-6">
-        <h1 className="text-lg font-bold text-gray-900">Inventario y caja</h1>
-      </header>
-
-      <nav className="flex shrink-0 items-center gap-2 border-b border-gray-100 bg-white px-6 py-3">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              tab === id
-                ? 'bg-orange-50 text-orange-500'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      <div className="flex-1 overflow-y-auto p-6">
-        {tab === 'caja' && <CajaTab />}
-        {tab === 'inventario' && <InventarioTab />}
-        
-        {tab === 'movimientos' && <MovimientosTab />}
-      </div>
-    </div>
-  )
-}
-
-// ---------------- Inventario ----------------
-
-function InventarioTab() {
-  const [fecha, setFecha] = useState(todayISO())
   const [registrando, setRegistrando] = useState(false)
   const [ajuste, setAjuste] = useState<{
     registro: InventarioDiario
@@ -155,10 +92,16 @@ function InventarioTab() {
         <input
           type="date"
           value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-          className="rounded-xl border border-gray-200 px-4 py-2 text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+          readOnly
+          disabled
+          className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-600 outline-none"
         />
       </label>
+      <p className="text-xs text-gray-500">
+        {cajaAbierta
+          ? `Inventario fijado por la caja abierta del ${formatFechaCorta(fecha)}.`
+          : `Inventario obligatorio para el día de hoy: ${formatFechaCorta(fecha)}.`}
+      </p>
 
       {isLoading ? (
         <p className="py-8 text-center text-sm text-gray-400">Cargando...</p>
@@ -576,418 +519,5 @@ function RegistrarInventarioModal({
         </button>
       </form>
     </Modal>
-  )
-}
-
-// ---------------- Caja ----------------
-
-function CajaTab() {
-  const queryClient = useQueryClient()
-  const hoy = todayISO()
-
-  const { data: cajaAbierta, isLoading } = useQuery({
-    queryKey: ['cajas', 'abierta'],
-    queryFn: getCajaAbierta,
-    retry: false,
-  })
-  const { data: cajas } = useQuery({
-    queryKey: ['cajas'],
-    queryFn: getCajas,
-  })
-  const { data: inventarioHoy } = useQuery({
-    queryKey: ['inventario', hoy],
-    queryFn: () => getInventario(hoy),
-  })
-
-  const [abriendo, setAbriendo] = useState(false)
-  const [cerrando, setCerrando] = useState(false)
-
-  const hayInventario = (inventarioHoy?.length ?? 0) > 0
-
-  function refrescarCajas() {
-    queryClient.invalidateQueries({ queryKey: ['cajas'] })
-    queryClient.invalidateQueries({ queryKey: ['cajas', 'abierta'] })
-  }
-
-  const abrirMutation = useMutation({
-    mutationFn: (payload: CajaAbrirRequest) => abrirCaja(payload),
-    onSuccess: () => {
-      refrescarCajas()
-      setAbriendo(false)
-    },
-  })
-
-  const cerrarMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: CajaCerrarRequest }) =>
-      cerrarCaja(id, payload),
-    onSuccess: () => {
-      refrescarCajas()
-      setCerrando(false)
-    },
-  })
-
-  return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      {isLoading ? (
-        <p className="py-8 text-center text-sm text-gray-400">Cargando...</p>
-      ) : cajaAbierta ? (
-        <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-green-500">
-                <Banknote className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-bold text-gray-900">Caja abierta</p>
-                <p className="text-sm text-gray-500">
-                  desde {formatFecha(cajaAbierta.fechaApertura)}
-                </p>
-              </div>
-            </div>
-            <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-600">
-              Activa
-            </span>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            <ResumenCaja label="Monto esperado" valor={cajaAbierta.montoEsperado} />
-            <ResumenCaja label="Cajero" valor={cajaAbierta.idEmpleado?.nombre} textToNumber={false} />
-          </div>
-          {cajaAbierta.observaciones && (
-            <p className="mt-3 text-sm text-gray-500">
-              {cajaAbierta.observaciones}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={() => setCerrando(true)}
-            className="mt-4 w-full rounded-xl bg-gray-900 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-gray-800"
-          >
-            Cerrar caja
-          </button>
-        </div>
-      ) : (
-        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
-              <Banknote className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="font-bold text-gray-900">No hay caja abierta</p>
-              <p className="text-sm text-gray-500">
-                Abre la caja para comenzar a registrar pedidos.
-              </p>
-            </div>
-          </div>
-          {!hayInventario && (
-            <p className="mt-4 rounded-xl bg-red-50 px-4 py-2 text-sm text-red-600">
-              Primero registra el inventario del día para poder abrir caja.
-            </p>
-          )}
-          <button
-            type="button"
-            disabled={!hayInventario}
-            onClick={() => setAbriendo(true)}
-            className="mt-4 w-full rounded-xl bg-orange-500 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
-          >
-            Abrir caja
-          </button>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900">Historial de cajas</h3>
-      </div>
-
-      {cajas && cajas.length > 0 ? (
-        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-          {cajas.map((caja) => (
-            <div
-              key={caja.id}
-              className="flex items-center gap-4 border-t border-gray-50 px-4 py-3 first:border-t-0"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  {formatFecha(caja.fechaApertura)}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {caja.idEmpleado?.nombre ?? 'Empleado'}
-                </p>
-              </div>
-              <div className="hidden text-right sm:block">
-                <p className="text-xs text-gray-400">Esperado</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {formatCurrency(caja.montoEsperado)}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-400">Real</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {formatCurrency(caja.montoReal)}
-                </p>
-              </div>
-              <span
-                className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                  caja.fechaCierre
-                    ? 'bg-gray-100 text-gray-500'
-                    : 'bg-green-50 text-green-600'
-                }`}
-              >
-                {caja.fechaCierre ? 'Cerrada' : 'Abierta'}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="py-6 text-center text-sm text-gray-400">
-          Sin cajas registradas.
-        </p>
-      )}
-
-      {abriendo && (
-        <AbrirCajaModal
-          onClose={() => setAbriendo(false)}
-          onSubmit={(payload) => abrirMutation.mutate(payload)}
-          isPending={abrirMutation.isPending}
-          error={abrirMutation.error}
-        />
-      )}
-      {cerrando && cajaAbierta && (
-        <CerrarCajaModal
-          caja={cajaAbierta}
-          onClose={() => setCerrando(false)}
-          onSubmit={(payload) =>
-            cerrarMutation.mutate({ id: cajaAbierta.id, payload })
-          }
-          isPending={cerrarMutation.isPending}
-          error={cerrarMutation.error}
-        />
-      )}
-    </div>
-  )
-}
-
-function ResumenCaja({
-  label,
-  valor,
-  textToNumber = true,
-}: {
-  label: string
-  valor: number | string | null | undefined
-  textToNumber?: boolean
-}) {
-  return (
-    <div className="rounded-2xl bg-gray-50 px-4 py-3">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-lg font-bold text-gray-900">
-        {textToNumber ? formatCurrency(valor as number) : (valor ?? '—')}
-      </p>
-    </div>
-  )
-}
-
-function AbrirCajaModal({
-  onClose,
-  onSubmit,
-  isPending,
-  error,
-}: {
-  onClose: () => void
-  onSubmit: (payload: CajaAbrirRequest) => void
-  isPending: boolean
-  error: unknown
-}) {
-  const [montoEsperado, setMontoEsperado] = useState('')
-  const [observaciones, setObservaciones] = useState('')
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    const monto = Number(montoEsperado)
-    if (montoEsperado === '' || Number.isNaN(monto) || monto < 0) return
-    onSubmit({
-      montoEsperado: monto,
-      observaciones: observaciones || undefined,
-    })
-  }
-
-  return (
-    <Modal open title="Abrir caja" onClose={onClose}>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <CampoMonto
-          label="Monto esperado inicial"
-          value={montoEsperado}
-          onChange={setMontoEsperado}
-          placeholder="0.00"
-        />
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-gray-700">Observaciones</span>
-          <input
-            type="text"
-            value={observaciones}
-            onChange={(e) => setObservaciones(e.target.value)}
-            className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-          />
-        </label>
-        {error ? (
-          <p className="rounded-xl bg-red-50 px-4 py-2 text-sm text-red-600">
-            {error instanceof Error ? error.message : 'Error al abrir caja'}
-          </p>
-        ) : null}
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded-xl bg-orange-500 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
-        >
-          {isPending ? 'Abriendo...' : 'Abrir caja'}
-        </button>
-      </form>
-    </Modal>
-  )
-}
-
-function CerrarCajaModal({
-  caja,
-  onClose,
-  onSubmit,
-  isPending,
-  error,
-}: {
-  caja: Caja
-  onClose: () => void
-  onSubmit: (payload: CajaCerrarRequest) => void
-  isPending: boolean
-  error: unknown
-}) {
-  const [montoReal, setMontoReal] = useState('')
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    const monto = Number(montoReal)
-    if (montoReal === '' || Number.isNaN(monto) || monto < 0) return
-    onSubmit({ montoReal: monto })
-  }
-
-  return (
-    <Modal open title="Cerrar caja" onClose={onClose}>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="rounded-2xl bg-gray-50 px-4 py-3 text-sm">
-          <p className="text-gray-500">Monto esperado</p>
-          <p className="text-lg font-bold text-gray-900">
-            {formatCurrency(caja.montoEsperado)}
-          </p>
-        </div>
-        <CampoMonto
-          label="Monto real en caja"
-          value={montoReal}
-          onChange={setMontoReal}
-          placeholder="0.00"
-        />
-        {error ? (
-          <p className="rounded-xl bg-red-50 px-4 py-2 text-sm text-red-600">
-            {error instanceof Error ? error.message : 'Error al cerrar caja'}
-          </p>
-        ) : null}
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded-xl bg-gray-900 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
-        >
-          {isPending ? 'Cerrando...' : 'Cerrar caja'}
-        </button>
-      </form>
-    </Modal>
-  )
-}
-
-function CampoMonto({
-  label,
-  value,
-  onChange,
-  placeholder,
-  min,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  placeholder?: string
-  min?: number
-}) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
-      <input
-        type="number"
-        min={min}
-        step="0.01"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-      />
-    </label>
-  )
-}
-
-// ---------------- Movimientos ----------------
-
-function MovimientosTab() {
-  const { data: movimientos, isLoading } = useQuery({
-    queryKey: ['movimientos'],
-    queryFn: () => getMovimientos(),
-  })
-
-  return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <div>
-        <h2 className="text-xl font-bold text-gray-900">Movimientos de inventario</h2>
-        <p className="text-sm text-gray-500">
-          Entradas y salidas generadas automáticamente por los pedidos.
-        </p>
-      </div>
-
-      {isLoading ? (
-        <p className="py-8 text-center text-sm text-gray-400">Cargando...</p>
-      ) : movimientos && movimientos.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          {movimientos.map((mov) => (
-            <MovimientoRow key={mov.id} mov={mov} />
-          ))}
-        </div>
-      ) : (
-        <p className="py-8 text-center text-sm text-gray-400">
-          Sin movimientos registrados.
-        </p>
-      )}
-    </div>
-  )
-}
-
-function MovimientoRow({ mov }: { mov: MovInventario }) {
-  const esSalida = mov.tipoMovimiento === 'SALIDA'
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-      <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-          esSalida ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'
-        }`}
-      >
-        <ArrowLeftRight className="h-5 w-5" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-gray-900">
-          {mov.idProducto?.nombre ?? 'Producto'}
-        </p>
-        <p className="text-xs text-gray-400">
-          {mov.tipoMovimiento}
-          {mov.idPedido ? ` · Pedido #${mov.idPedido.id}` : ''} ·{' '}
-          {formatFecha(mov.fecha)}
-        </p>
-      </div>
-      <span
-        className={`shrink-0 font-bold ${esSalida ? 'text-red-500' : 'text-green-600'}`}
-      >
-        {esSalida ? '−' : '+'}
-        {mov.cantidad}
-      </span>
-    </div>
   )
 }

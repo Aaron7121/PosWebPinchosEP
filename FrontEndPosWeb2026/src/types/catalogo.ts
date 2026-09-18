@@ -3,6 +3,7 @@ export interface CategoriaPlato {
   nombre: string
   activo: boolean | null
   img: string | null
+  categoriaPadre: CategoriaPlato | null
 }
 
 export interface Plato {
@@ -33,6 +34,7 @@ export interface CategoriaRequest {
   nombre?: string
   activo?: boolean
   img?: string
+  categoriaPadre?: { id: number } | null
 }
 
 export interface PlatoRequest {

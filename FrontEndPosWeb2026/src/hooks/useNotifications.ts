@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../store/auth'
+import { useNotificationsStore } from '../store/notifications'
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api'
 const MAX_BACKOFF = 30_000
@@ -39,6 +40,7 @@ export function useNotifications() {
         case 'catalogo:modificado':
           queryClient.invalidateQueries({ queryKey: ['platos'] })
           queryClient.invalidateQueries({ queryKey: ['categorias'] })
+          queryClient.invalidateQueries({ queryKey: ['categorias', 'arbol'] })
           break
         case 'inventario:modificado':
           queryClient.invalidateQueries({ queryKey: ['productos'] })
@@ -47,6 +49,8 @@ export function useNotifications() {
           break
         case 'pedido:nuevo':
         case 'pedido:actualizado':
+        case 'pedido:listo':
+        case 'pedido:cobrado':
         case 'pedido:eliminado':
           queryClient.invalidateQueries({ queryKey: ['pedidos'] })
           queryClient.invalidateQueries({ queryKey: ['inventario'] })
@@ -54,6 +58,31 @@ export function useNotifications() {
           break
         case 'caja:modificado':
           queryClient.invalidateQueries({ queryKey: ['cajas'] })
+          queryClient.invalidateQueries({ queryKey: ['cajas', 'abierta'] })
+          break
+      }
+    }
+
+    function notificarEvento(
+      type?: string,
+      data?: { id?: number; total?: number },
+    ) {
+      const store = useNotificationsStore.getState()
+      switch (type) {
+        case 'pedido:nuevo':
+          if (data?.id != null) {
+            store.notificar({ tipo: 'nuevo', id: data.id, total: data.total })
+          }
+          break
+        case 'pedido:listo':
+          if (data?.id != null) {
+            store.notificar({ tipo: 'listo', id: data.id, total: data.total })
+          }
+          break
+        case 'pedido:cobrado':
+          if (data?.id != null) {
+            store.mostrarVisto(data.id)
+          }
           break
       }
     }
@@ -78,8 +107,12 @@ export function useNotifications() {
 
       source.onmessage = (event) => {
         try {
-          const { type } = JSON.parse(event.data) as { type?: string }
+          const { type, data } = JSON.parse(event.data) as {
+            type?: string
+            data?: { id?: number; total?: number }
+          }
           invalidar(type)
+          notificarEvento(type, data)
         } catch {
           // Ignorar mensajes malformados
         }

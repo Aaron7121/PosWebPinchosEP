@@ -32,6 +32,31 @@ interface RecetaRow {
   cantidad: string
 }
 
+function flattenCategorias(categorias: CategoriaPlato[]) {
+  const children = new Map<number | null, CategoriaPlato[]>()
+  for (const categoria of categorias) {
+    const parentId = categoria.categoriaPadre?.id ?? null
+    const siblings = children.get(parentId) ?? []
+    siblings.push(categoria)
+    children.set(parentId, siblings)
+  }
+
+  const result: { categoria: CategoriaPlato; label: string }[] = []
+  const visit = (parentId: number | null, prefix: string) => {
+    const siblings = [...(children.get(parentId) ?? [])].sort((a, b) =>
+      a.nombre.localeCompare(b.nombre),
+    )
+    for (const categoria of siblings) {
+      const label = prefix ? `${prefix} / ${categoria.nombre}` : categoria.nombre
+      result.push({ categoria, label })
+      visit(categoria.id, label)
+    }
+  }
+
+  visit(null, '')
+  return result
+}
+
 export function PlatoFormPage() {
   const { id } = useParams()
   const isEdit = Boolean(id)
@@ -102,6 +127,12 @@ function PlatoForm({
   const [idCategoria, setIdCategoria] = useState<number | ''>(
     initial?.idCategoria?.id ?? '',
   )
+  const [formError, setFormError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<{
+    nombre?: string
+    precio?: string
+    recetas?: string
+  }>({})
   const [recetas, setRecetas] = useState<RecetaRow[]>(() =>
     recetasIniciales.map((r) => ({
       key: String(r.id),
@@ -126,6 +157,25 @@ function PlatoForm({
 
   function removeReceta(key: string) {
     setRecetas((prev) => prev.filter((r) => r.key !== key))
+  }
+
+  function validateForm() {
+    const errors: typeof fieldErrors = {}
+    if (!nombre.trim()) {
+      errors.nombre = 'El nombre es obligatorio'
+    }
+    const numericPrice = precio === '' ? NaN : Number(precio)
+    if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+      errors.precio = 'Ingresa un precio válido mayor o igual a cero'
+    }
+    const incompleteRecipe = recetas.some(
+      (r) => r.idProducto === '' || r.cantidad === '' || Number(r.cantidad) <= 0,
+    )
+    if (incompleteRecipe) {
+      errors.recetas = 'Completa el producto y una cantidad mayor que cero'
+    }
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
   }
 
   const mutation = useMutation({
@@ -174,6 +224,8 @@ function PlatoForm({
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    setFormError('')
+    if (!validateForm()) return
     mutation.mutate()
   }
 
@@ -202,6 +254,7 @@ function PlatoForm({
               label="Nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
+              error={fieldErrors.nombre}
               required
             />
             <Textarea
@@ -217,6 +270,7 @@ function PlatoForm({
                 step="0.01"
                 value={precio}
                 onChange={(e) => setPrecio(e.target.value)}
+                error={fieldErrors.precio}
               />
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-gray-700">
@@ -232,9 +286,9 @@ function PlatoForm({
                   className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                 >
                   <option value="">Sin categoría</option>
-                  {categorias.map((categoria) => (
+                  {flattenCategorias(categorias).map(({ categoria, label }) => (
                     <option key={categoria.id} value={categoria.id}>
-                      {categoria.nombre}
+                      {label}
                     </option>
                   ))}
                 </select>
@@ -321,13 +375,16 @@ function PlatoForm({
               ))
             )}
           </div>
+          {fieldErrors.recetas && (
+            <p className="mt-3 text-xs text-red-600">{fieldErrors.recetas}</p>
+          )}
         </div>
 
-        {mutation.isError && (
+        {(mutation.isError || formError) && (
           <p className="rounded-xl bg-red-50 px-4 py-2 text-sm text-red-600">
-            {mutation.error instanceof Error
+            {formError || (mutation.error instanceof Error
               ? mutation.error.message
-              : 'Error al guardar'}
+              : 'Error al guardar')}
           </p>
         )}
 

@@ -2,6 +2,7 @@ package com.joedev.posweb.pep.rest;
 
 import com.joedev.posweb.pep.dto.CajaAbrirRequest;
 import com.joedev.posweb.pep.dto.CajaCerrarRequest;
+import com.joedev.posweb.pep.dto.ResumenCierreCaja;
 import com.joedev.posweb.pep.entity.Caja;
 import com.joedev.posweb.pep.services.CajaService;
 import jakarta.annotation.security.RolesAllowed;
@@ -46,6 +47,12 @@ public class CajaResource {
     @Path("/{id}")
     public Caja obtenerPorId(@PathParam("id") Long id) {
         return service.obtenerPorId(id);
+    }
+
+    @GET
+    @Path("/{id}/resumen-cierre")
+    public ResumenCierreCaja resumenCierre(@PathParam("id") Long id) {
+        return service.resumenCierre(id);
     }
 
     @Transactional

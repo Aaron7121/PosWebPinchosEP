@@ -1,6 +1,5 @@
 import { request } from './client'
 import type {
-  EstadoRequest,
   PasswordRequest,
   Usuario,
   UsuarioRequest,
@@ -24,13 +23,6 @@ export function createUsuario(payload: UsuarioRequest) {
 export function updateUsuario(id: number, payload: UsuarioRequest) {
   return request<Usuario>(`/usuarios/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(payload),
-  })
-}
-
-export function updateUsuarioEstado(id: number, payload: EstadoRequest) {
-  return request<Usuario>(`/usuarios/${id}/estado`, {
-    method: 'PATCH',
     body: JSON.stringify(payload),
   })
 }

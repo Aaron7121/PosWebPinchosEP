@@ -3,6 +3,7 @@ import type {
   Caja,
   CajaAbrirRequest,
   CajaCerrarRequest,
+  ResumenCierreCaja,
 } from '../types/pos'
 
 export function getCajas() {
@@ -11,6 +12,10 @@ export function getCajas() {
 
 export function getCajaAbierta() {
   return request<Caja | undefined>('/cajas/abierta')
+}
+
+export function getResumenCierre(id: number) {
+  return request<ResumenCierreCaja>(`/cajas/${id}/resumen-cierre`)
 }
 
 export function abrirCaja(payload: CajaAbrirRequest) {

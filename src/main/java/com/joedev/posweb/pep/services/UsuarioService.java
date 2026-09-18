@@ -27,7 +27,7 @@ public class UsuarioService {
     DireccionRepository direccionRepository;
 
     public List<UsuarioResponse> listarTodos() {
-        return repository.listAll().stream().map(UsuarioResponse::from).toList();
+        return repository.listColaboradoresActivos().stream().map(UsuarioResponse::from).toList();
     }
 
     public UsuarioResponse obtenerPorId(Integer id) {
@@ -44,7 +44,7 @@ public class UsuarioService {
         Usuario usuario = new Usuario();
         aplicar(usuario, request);
         usuario.setPassword(SecurityUtils.hash(request.password()));
-        usuario.setActivo(request.activo() == null ? Boolean.TRUE : request.activo());
+        usuario.setActivo(true);
 
         repository.persistAndFlush(usuario);
         return UsuarioResponse.from(usuario);
@@ -64,20 +64,12 @@ public class UsuarioService {
 
     @Transactional
     public void eliminar(Integer id) {
-        if (!repository.deleteById(id)) {
-            throw new EntidadNoEncontradaException("El usuario con id " + id + " no existe");
-        }
-    }
-
-    @Transactional
-    public UsuarioResponse cambiarEstado(Integer id, Boolean activo) {
-        if (activo == null) {
-            throw new DatoInvalidoException("El campo 'activo' es obligatorio");
-        }
         Usuario usuario = obtenerEntidad(id);
-        usuario.setActivo(activo);
+        if (!"COLABORADOR".equalsIgnoreCase(usuario.getRol())) {
+            throw new ConflictoException("Solo se pueden desactivar colaboradores");
+        }
+        usuario.setActivo(false);
         repository.persistAndFlush(usuario);
-        return UsuarioResponse.from(usuario);
     }
 
     @Transactional
@@ -103,7 +95,6 @@ public class UsuarioService {
         if (request.cargo() != null) usuario.setCargo(request.cargo());
         if (request.usuario() != null) usuario.setUsuario(request.usuario());
         if (request.rol() != null) usuario.setRol(request.rol());
-        if (request.activo() != null) usuario.setActivo(request.activo());
         aplicarDireccion(usuario, request.direccion());
     }
 

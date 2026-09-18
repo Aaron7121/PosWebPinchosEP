@@ -1,11 +1,14 @@
 package com.joedev.posweb.pep.services;
 
+import com.joedev.posweb.pep.dto.ResumenCierreCaja;
 import com.joedev.posweb.pep.entity.Caja;
 import com.joedev.posweb.pep.exception.ConflictoException;
 import com.joedev.posweb.pep.exception.DatoInvalidoException;
 import com.joedev.posweb.pep.exception.EntidadNoEncontradaException;
 import com.joedev.posweb.pep.repository.CajaRepository;
+import com.joedev.posweb.pep.repository.DetallePagoRepository;
 import com.joedev.posweb.pep.repository.InventarioDiarioRepository;
+import com.joedev.posweb.pep.repository.PedidoRepository;
 import com.joedev.posweb.pep.stream.NotificationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -14,6 +17,8 @@ import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +30,12 @@ public class CajaService {
 
     @Inject
     InventarioDiarioRepository inventarioRepository;
+
+    @Inject
+    PedidoRepository pedidoRepository;
+
+    @Inject
+    DetallePagoRepository detallePagoRepository;
 
     @Inject
     UsuarioActualService usuarioActual;
@@ -43,6 +54,31 @@ public class CajaService {
 
     public Caja obtenerAbierta() {
         return repository.findAbierta().orElse(null);
+    }
+
+    public ResumenCierreCaja resumenCierre(Long id) {
+        Caja caja = obtenerPorId(id);
+        OffsetDateTime desde = OffsetDateTime.ofInstant(caja.getFechaApertura(), ZoneId.systemDefault());
+        OffsetDateTime hasta = caja.getFechaCierre() != null
+                ? OffsetDateTime.ofInstant(caja.getFechaCierre(), ZoneId.systemDefault())
+                : OffsetDateTime.now();
+
+        BigDecimal efectivo = BigDecimal.ZERO;
+        BigDecimal transferencia = BigDecimal.ZERO;
+        for (Object[] row : detallePagoRepository.resumenPorTipo(desde, hasta)) {
+            String tipo = (String) row[0];
+            BigDecimal total = row[1] == null ? BigDecimal.ZERO : (BigDecimal) row[1];
+            if ("EFECTIVO".equals(tipo)) {
+                efectivo = total;
+            } else if ("TRANSFERENCIA".equals(tipo)) {
+                transferencia = total;
+            }
+        }
+
+        BigDecimal montoInicial = caja.getMontoEsperado() == null ? BigDecimal.ZERO : caja.getMontoEsperado();
+        BigDecimal efectivoEsperado = montoInicial.add(efectivo);
+        BigDecimal totalEsperado = efectivoEsperado.add(transferencia);
+        return new ResumenCierreCaja(montoInicial, efectivo, transferencia, efectivoEsperado, transferencia, totalEsperado);
     }
 
     @Transactional
@@ -77,6 +113,12 @@ public class CajaService {
                 .orElseThrow(() -> new EntidadNoEncontradaException("La caja con id " + id + " no existe"));
         if (caja.getFechaCierre() != null) {
             throw new ConflictoException("La caja ya está cerrada");
+        }
+        OffsetDateTime desde = OffsetDateTime.ofInstant(caja.getFechaApertura(), ZoneId.systemDefault());
+        long pendientes = pedidoRepository.countNoCompletadosDesde(desde);
+        if (pendientes > 0) {
+            throw new ConflictoException("No se puede cerrar la caja: hay " + pendientes
+                    + " pedido(s) sin entregar o sin pagar");
         }
         caja.setFechaCierre(Instant.now());
         caja.setMontoReal(montoReal);

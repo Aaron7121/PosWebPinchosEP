@@ -26,4 +26,8 @@ public class CategoriaPlato {
     @Column(name = "img")
     private String img;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_categoria_padre")
+    private CategoriaPlato categoriaPadre;
+
 }

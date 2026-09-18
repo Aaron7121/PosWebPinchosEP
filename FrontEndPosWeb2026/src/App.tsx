@@ -3,7 +3,7 @@ import { AppLayout } from './components/layout/AppLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { NewOrderPage } from './pages/NewOrderPage'
-import { InventoryPage } from './pages/InventoryPage'
+import { InventoryPage } from './pages/inventario/InventoryPage'
 import { PedidosPage } from './pages/PedidosPage'
 import { StatisticsPage } from './pages/StatisticsPage'
 import { ConfigLayout } from './pages/config/ConfigLayout'
@@ -14,6 +14,7 @@ import { PlatosPage } from './pages/config/PlatosPage'
 import { PlatoFormPage } from './pages/config/PlatoFormPage'
 import { ProductosPage } from './pages/config/ProductosPage'
 import { CategoriasPage } from './pages/config/CategoriasPage'
+import { ClientesPage } from './pages/config/ClientesPage'
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
             <Route path="platos/:id" element={<PlatoFormPage />} />
             <Route path="productos" element={<ProductosPage />} />
             <Route path="categorias" element={<CategoriasPage />} />
+            <Route path="clientes" element={<ClientesPage />} />
             <Route path="usuarios" element={<UsuariosPage />} />
             <Route path="usuarios/nuevo" element={<UserFormPage />} />
             <Route path="usuarios/:id" element={<UserFormPage />} />

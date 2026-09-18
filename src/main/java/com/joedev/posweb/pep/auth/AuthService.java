@@ -58,6 +58,9 @@ public class AuthService {
         Usuario usuario = usuarioRepository.find("correo", correo)
                 .firstResultOptional()
                 .orElseThrow(() -> new CredencialesInvalidasException("No se encontró el usuario del token"));
+        if (Boolean.FALSE.equals(usuario.getActivo())) {
+            throw new CredencialesInvalidasException("La cuenta está inactiva");
+        }
         return UserResponse.from(usuario);
     }
 }

@@ -18,7 +18,6 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 
-@RolesAllowed("ADMIN")
 @Path("/api/categorias-plato")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -28,24 +27,42 @@ public class CategoriaPlatoResource {
     CategoriaPlatoService service;
 
     @GET
+    @RolesAllowed({"ADMIN", "COLABORADOR"})
     public List<CategoriaPlato> listarTodos() {
         return service.listarTodos();
     }
 
     @GET
     @Path("/activos")
+    @RolesAllowed({"ADMIN", "COLABORADOR"})
     public List<CategoriaPlato> listarActivas() {
         return service.listarActivas();
     }
 
     @GET
+    @Path("/activas/raices")
+    @RolesAllowed({"ADMIN", "COLABORADOR"})
+    public List<CategoriaPlato> listarRaicesActivas() {
+        return service.listarRaicesActivas();
+    }
+
+    @GET
+    @Path("/activas/{idCategoriaPadre}/hijas")
+    @RolesAllowed({"ADMIN", "COLABORADOR"})
+    public List<CategoriaPlato> listarHijasActivas(@PathParam("idCategoriaPadre") Integer idCategoriaPadre) {
+        return service.listarHijasActivas(idCategoriaPadre);
+    }
+
+    @GET
     @Path("/{id}")
+    @RolesAllowed({"ADMIN", "COLABORADOR"})
     public CategoriaPlato obtenerPorId(@PathParam("id") Integer id) {
         return service.obtenerPorId(id);
     }
 
     @Transactional
     @POST
+    @RolesAllowed("ADMIN")
     public Response crear(CategoriaPlato categoriaPlato) {
         CategoriaPlato creada = service.crear(categoriaPlato);
         return Response.status(Response.Status.CREATED).entity(creada).build();
@@ -54,6 +71,7 @@ public class CategoriaPlatoResource {
     @Transactional
     @PUT
     @Path("/{id}")
+    @RolesAllowed("ADMIN")
     public CategoriaPlato actualizar(@PathParam("id") Integer id, CategoriaPlato categoriaPlato) {
         return service.actualizar(id, categoriaPlato);
     }
@@ -61,6 +79,7 @@ public class CategoriaPlatoResource {
     @Transactional
     @DELETE
     @Path("/{id}")
+    @RolesAllowed("ADMIN")
     public Response eliminar(@PathParam("id") Integer id) {
         service.eliminar(id);
         return Response.noContent().build();

@@ -19,6 +19,16 @@ export function getCategoriasActivas() {
   return request<CategoriaPlato[]>('/categorias-plato/activos')
 }
 
+export function getCategoriasRaizActivas() {
+  return request<CategoriaPlato[]>('/categorias-plato/activas/raices')
+}
+
+export function getCategoriasHijasActivas(idCategoriaPadre: number) {
+  return request<CategoriaPlato[]>(
+    `/categorias-plato/activas/${idCategoriaPadre}/hijas`,
+  )
+}
+
 export function createCategoria(payload: CategoriaRequest) {
   return request<CategoriaPlato>('/categorias-plato', {
     method: 'POST',
@@ -40,6 +50,10 @@ export function deleteCategoria(id: number) {
 // Platos
 export function getPlatos() {
   return request<Plato[]>('/platos')
+}
+
+export function getPlatosActivos() {
+  return request<Plato[]>('/platos/activos')
 }
 
 export function getPlato(id: number) {

@@ -1,6 +1,5 @@
 package com.joedev.posweb.pep.rest;
 
-import com.joedev.posweb.pep.auth.EstadoRequest;
 import com.joedev.posweb.pep.auth.PasswordRequest;
 import com.joedev.posweb.pep.auth.UsuarioRequest;
 import com.joedev.posweb.pep.auth.UsuarioResponse;
@@ -54,13 +53,6 @@ public class UsuarioResource {
     @Path("/{id}")
     public UsuarioResponse actualizar(@PathParam("id") Integer id, UsuarioRequest request) {
         return service.actualizar(id, request);
-    }
-
-    @Transactional
-    @PATCH
-    @Path("/{id}/estado")
-    public UsuarioResponse cambiarEstado(@PathParam("id") Integer id, EstadoRequest request) {
-        return service.cambiarEstado(id, request.activo());
     }
 
     @Transactional

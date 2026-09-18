@@ -3,6 +3,7 @@ package com.joedev.posweb.pep.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 
@@ -23,7 +24,7 @@ public class Plato {
     @Column(name = "descripcion", length = Integer.MAX_VALUE)
     private String descripcion;
 
-    @Column(name = "precio", precision = 8, scale = 2)
+    @Column(name = "precio", nullable = false, precision = 8, scale = 2)
     private BigDecimal precio;
 
     @Column(name = "img", length = Integer.MAX_VALUE)
@@ -32,5 +33,9 @@ public class Plato {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_categoria")
     private CategoriaPlato idCategoria;
+
+    @ColumnDefault("true")
+    @Column(name = "activo")
+    private Boolean activo;
 
 }

@@ -2,6 +2,7 @@ package com.joedev.posweb.pep.services;
 
 import com.joedev.posweb.pep.dto.DetalleRequest;
 import com.joedev.posweb.pep.dto.PedidoRequest;
+import com.joedev.posweb.pep.entity.Caja;
 import com.joedev.posweb.pep.entity.Cliente;
 import com.joedev.posweb.pep.entity.DetallePedido;
 import com.joedev.posweb.pep.entity.InventarioDiario;
@@ -31,6 +32,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,7 +78,12 @@ public class PedidoService {
     IdempotenciaService idempotencia;
 
     public List<Pedido> listarTodos() {
-        return repository.list("order by fecha desc");
+        Optional<Caja> abierta = cajaRepository.findAbierta();
+        if (abierta.isEmpty()) {
+            return List.of();
+        }
+        OffsetDateTime desde = abierta.get().getFechaApertura().atOffset(ZoneOffset.UTC);
+        return repository.find("fecha >= ?1 order by fecha desc", desde).list();
     }
 
     public Pedido obtenerPorId(Integer id) {
@@ -173,7 +180,7 @@ public class PedidoService {
 
         pedido.setTotal(total.setScale(2, RoundingMode.HALF_UP));
         repository.persistAndFlush(pedido);
-        notifier.emitir("pedido:nuevo", Map.of("id", pedido.getId()));
+        notifier.emitir("pedido:nuevo", Map.of("id", pedido.getId(), "total", pedido.getTotal()));
         notifier.emitir("inventario:modificado", Map.of());
         return pedido;
     }
@@ -218,6 +225,9 @@ public class PedidoService {
         pedido.setEstadoPedido(estado);
         repository.persistAndFlush(pedido);
         notifier.emitir("pedido:actualizado", Map.of("id", id));
+        if ("ENTREGADO".equals(estado)) {
+            notifier.emitir("pedido:listo", Map.of("id", id, "total", pedido.getTotal()));
+        }
         return pedido;
     }
 

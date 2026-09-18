@@ -16,6 +16,16 @@ export function formatFecha(iso: string | null | undefined): string {
   })
 }
 
+export function formatHora(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const fecha = new Date(iso)
+  if (Number.isNaN(fecha.getTime())) return '—'
+  return fecha.toLocaleTimeString('es-EC', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export function formatFechaCorta(iso: string | null | undefined): string {
   if (!iso) return '—'
   const fecha = new Date(iso)

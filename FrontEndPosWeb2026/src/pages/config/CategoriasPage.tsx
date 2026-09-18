@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus, Tags, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Pencil, Plus, Tags, Trash2 } from 'lucide-react'
 import {
   createCategoria,
   deleteCategoria,
@@ -23,6 +23,7 @@ export function CategoriasPage() {
 
   const [isCreating, setIsCreating] = useState(false)
   const [editing, setEditing] = useState<CategoriaPlato | null>(null)
+  const [collapsed, setCollapsed] = useState<Set<number>>(new Set())
 
   const deleteMutation = useMutation({
     mutationFn: deleteCategoria,
@@ -58,40 +59,26 @@ export function CategoriasPage() {
         <p className="py-8 text-center text-sm text-gray-400">Cargando...</p>
       ) : categorias && categorias.length > 0 ? (
         <div className="flex flex-col gap-3">
-          {categorias.map((categoria) => (
-            <div
-              key={categoria.id}
-              className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
-            >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
-                <Tags className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-gray-900">{categoria.nombre}</p>
-                <p className="truncate text-sm text-gray-500">
-                  {categoria.activo ? 'Activa' : 'Inactiva'}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <button
-                  type="button"
-                  title="Editar"
-                  onClick={() => setEditing(categoria)}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-900"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  title="Eliminar"
-                  onClick={() => handleDelete(categoria)}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          ))}
+          {categorias
+            .filter((categoria) => categoria.categoriaPadre == null)
+            .map((categoria) => (
+              <CategoriaTree
+                key={categoria.id}
+                categoria={categoria}
+                categorias={categorias}
+                collapsed={collapsed}
+                onToggle={(id) =>
+                  setCollapsed((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(id)) next.delete(id)
+                    else next.add(id)
+                    return next
+                  })
+                }
+                onEdit={setEditing}
+                onDelete={handleDelete}
+              />
+            ))}
         </div>
       ) : (
         <p className="py-8 text-center text-sm text-gray-400">
@@ -100,10 +87,104 @@ export function CategoriasPage() {
       )}
 
       {isCreating && (
-        <CategoriaModal categoria={null} onClose={() => setIsCreating(false)} />
+        <CategoriaModal
+          categoria={null}
+          categorias={categorias ?? []}
+          onClose={() => setIsCreating(false)}
+        />
       )}
       {editing && (
-        <CategoriaModal categoria={editing} onClose={() => setEditing(null)} />
+        <CategoriaModal
+          categoria={editing}
+          categorias={categorias ?? []}
+          onClose={() => setEditing(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+function CategoriaTree({
+  categoria,
+  categorias,
+  collapsed,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  categoria: CategoriaPlato
+  categorias: CategoriaPlato[]
+  collapsed: Set<number>
+  onToggle: (id: number) => void
+  onEdit: (categoria: CategoriaPlato) => void
+  onDelete: (categoria: CategoriaPlato) => void
+}) {
+  const hijas = categorias.filter(
+    (item) => item.categoriaPadre?.id === categoria.id,
+  )
+  const isCollapsed = collapsed.has(categoria.id)
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+        <button
+          type="button"
+          title={isCollapsed ? 'Expandir' : 'Contraer'}
+          onClick={() => onToggle(categoria.id)}
+          disabled={hijas.length === 0}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-50 disabled:opacity-30"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </button>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
+          <Tags className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-gray-900">{categoria.nombre}</p>
+          <p className="truncate text-sm text-gray-500">
+            {hijas.length > 0
+              ? `${hijas.length} subcategoría${hijas.length === 1 ? '' : 's'}`
+              : 'Sin subcategorías'}{' '}
+            · {categoria.activo ? 'Activa' : 'Inactiva'}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            title="Editar"
+            onClick={() => onEdit(categoria)}
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-900"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            title="Eliminar"
+            onClick={() => onDelete(categoria)}
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      {!isCollapsed && hijas.length > 0 && (
+        <div className="ml-7 flex flex-col gap-2 border-l-2 border-orange-100 pl-3">
+          {hijas.map((hija) => (
+            <CategoriaTree
+              key={hija.id}
+              categoria={hija}
+              categorias={categorias}
+              collapsed={collapsed}
+              onToggle={onToggle}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
       )}
     </div>
   )
@@ -111,9 +192,11 @@ export function CategoriasPage() {
 
 function CategoriaModal({
   categoria,
+  categorias,
   onClose,
 }: {
   categoria: CategoriaPlato | null
+  categorias: CategoriaPlato[]
   onClose: () => void
 }) {
   const queryClient = useQueryClient()
@@ -122,6 +205,20 @@ function CategoriaModal({
   const [nombre, setNombre] = useState(categoria?.nombre ?? '')
   const [img, setImg] = useState(categoria?.img ?? '')
   const [activo, setActivo] = useState(categoria?.activo ?? true)
+  const [idCategoriaPadre, setIdCategoriaPadre] = useState<number | ''>(
+    categoria?.categoriaPadre?.id ?? '',
+  )
+
+  const idsDescendientes = new Set<number>()
+  function agregarDescendientes(id: number) {
+    for (const item of categorias) {
+      if (item.categoriaPadre?.id === id && !idsDescendientes.has(item.id)) {
+        idsDescendientes.add(item.id)
+        agregarDescendientes(item.id)
+      }
+    }
+  }
+  if (categoria) agregarDescendientes(categoria.id)
 
   const mutation = useMutation({
     mutationFn: (payload: CategoriaRequest) =>
@@ -134,7 +231,13 @@ function CategoriaModal({
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    mutation.mutate({ nombre, img: img || undefined, activo })
+    mutation.mutate({
+      nombre,
+      img: img || undefined,
+      activo,
+      categoriaPadre:
+        idCategoriaPadre === '' ? null : { id: Number(idCategoriaPadre) },
+    })
   }
 
   return (
@@ -150,6 +253,30 @@ function CategoriaModal({
           onChange={(e) => setNombre(e.target.value)}
           required
         />
+        <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
+          Categoría padre
+          <select
+            value={idCategoriaPadre}
+            onChange={(e) =>
+              setIdCategoriaPadre(
+                e.target.value === '' ? '' : Number(e.target.value),
+              )
+            }
+            className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+          >
+            <option value="">Sin categoría padre (raíz)</option>
+            {categorias
+              .filter(
+                (item) =>
+                  item.id !== categoria?.id && !idsDescendientes.has(item.id),
+              )
+              .map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nombre}
+                </option>
+              ))}
+          </select>
+        </label>
         <ImageUpload tipo="categorias" value={img} onChange={setImg} />
 
         <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 px-4 py-2.5 transition-colors hover:bg-gray-50">

@@ -18,8 +18,12 @@ public class UsuarioActualService {
 
     public Usuario getUsuario() {
         String nombrePrincipal = securityIdentity.getPrincipal().getName();
-        return usuarioRepository.find("correo = ?1 OR usuario = ?1", nombrePrincipal)
+        Usuario usuario = usuarioRepository.find("correo = ?1 OR usuario = ?1", nombrePrincipal)
                 .firstResultOptional()
                 .orElseThrow(() -> new EntidadNoEncontradaException("No se encontró el usuario autenticado"));
+        if (Boolean.FALSE.equals(usuario.getActivo())) {
+            throw new EntidadNoEncontradaException("La cuenta está inactiva");
+        }
+        return usuario;
     }
 }

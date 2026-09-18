@@ -40,6 +40,14 @@ export interface DetallePedido {
   tipoPago: string | null
 }
 
+export interface DetallePago {
+  id: number
+  idPedido: unknown | null
+  tipo: string | null
+  total: number | null
+  fecha: string | null
+}
+
 export interface InventarioDiario {
   id: number
   fecha: string
@@ -66,6 +74,15 @@ export interface CajaCerrarRequest {
   montoReal: number
 }
 
+export interface ResumenCierreCaja {
+  montoInicial: number
+  totalEfectivo: number
+  totalTransferencia: number
+  efectivoEsperado: number
+  transferenciaEsperada: number
+  totalEsperado: number
+}
+
 export interface DetalleRequest {
   idPlato: number
   cantidad: number
@@ -89,6 +106,47 @@ export interface MovInventarioRequest {
   idProducto: { id: number }
   tipoMovimiento: string
   cantidad: number
+}
+
+export interface PagoItemRequest {
+  tipo: string
+  monto: number
+}
+
+export interface ClientePagoRequest {
+  cedula?: string
+  nombre?: string
+  telefono?: string
+  correo?: string
+}
+
+export interface PagoRequest {
+  idPedido: number
+  cliente?: ClientePagoRequest | null
+  pagos: PagoItemRequest[]
+}
+
+export interface ResumenPago {
+  tipo: string
+  total: number
+}
+
+export interface Cliente {
+  id: number
+  nombre: string | null
+  telefono: string | null
+  correo: string | null
+  idDireccion: unknown | null
+  cedula: string | null
+  activo: boolean | null
+}
+
+export interface ClienteRequest {
+  nombre?: string
+  telefono?: string
+  correo?: string
+  cedula?: string
+  activo?: boolean
 }
 
 export const ESTADOS_PEDIDO = [
