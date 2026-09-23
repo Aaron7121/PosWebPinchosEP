@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
-import { BarChart3, Boxes, ClipboardList, LogOut, ReceiptText, Settings, X } from 'lucide-react'
+import { BarChart3, Boxes, ClipboardList, Download, LogOut, ReceiptText, Settings, X } from 'lucide-react'
 import { useAuthStore } from '../../store/auth'
+import { useInstallPrompt } from '../../hooks/useInstallPrompt'
 import { SoundToggle } from '../ui/SoundToggle'
 import logoNegocio from '../../assets/logoNegocio.png'
 
@@ -56,6 +57,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
+  const { canInstall, promptInstall } = useInstallPrompt()
 
   return (
     <>
@@ -108,6 +110,16 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           showLabel
           className="flex h-11 w-full items-center gap-3 rounded-xl px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
         />
+        {canInstall && (
+          <button
+            type="button"
+            onClick={promptInstall}
+            className="flex h-11 w-full items-center gap-3 rounded-xl px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+          >
+            <Download className="h-5 w-5 shrink-0" />
+            Instalar app
+          </button>
+        )}
         <button
           type="button"
           onClick={logout}

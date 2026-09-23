@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Ban,
@@ -9,6 +9,7 @@ import {
   ChevronUp,
   CircleDollarSign,
   ClipboardList,
+  Pencil,
   Smartphone,
   ShoppingBag,
   Utensils,
@@ -78,6 +79,7 @@ function tabPara(pedido: Pedido): Tab {
 }
 
 export function PedidosPage() {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const colapsar = usePedidosUI((s) => s.colapsar)
   const [tabActiva, setTabActiva] = useState<Tab>('PENDIENTE')
@@ -186,6 +188,7 @@ export function PedidosPage() {
                 onPagado={() => setCobrarDe(pedido)}
                 onCancelar={() => setCancelarDe(pedido)}
                 onDividir={() => setDividirDe(pedido)}
+                onEditar={() => navigate(`/?mode=edit&pedidoId=${pedido.id}`)}
                 mutando={estadoMutation.isPending}
                 destacado={pedido.id === destacadoId}
               />
@@ -213,6 +216,7 @@ export function PedidosPage() {
           onCancel={() => setCancelarDe(null)}
         />
       )}
+
     </div>
   )
 }
@@ -224,6 +228,7 @@ function PedidoCard({
   onPagado,
   onCancelar,
   onDividir,
+  onEditar,
   mutando,
   destacado,
 }: {
@@ -233,6 +238,7 @@ function PedidoCard({
   onPagado: () => void
   onCancelar: () => void
   onDividir: () => void
+  onEditar: () => void
   mutando: boolean
   destacado: boolean
 }) {
@@ -322,6 +328,16 @@ function PedidoCard({
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {esPendiente && (
+            <button
+              type="button"
+              onClick={onEditar}
+              aria-label="Editar pedido"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-colors hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={onDividir}

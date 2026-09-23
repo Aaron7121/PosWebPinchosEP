@@ -1,8 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, Minus, Plus } from 'lucide-react'
-import { getCajaAbierta } from '../../api/caja'
+import { CalendarDays, Minus, Plus, Search } from 'lucide-react'
 import { getProductos } from '../../api/catalogo'
 import {
   getInventario,
@@ -19,17 +18,9 @@ import { Modal } from '../../components/ui/Modal'
 import { CampoMonto } from './CampoMonto'
 
 export function InventarioTab() {
-  const { data: cajaAbierta } = useQuery({
-    queryKey: ['cajas', 'abierta'],
-    queryFn: getCajaAbierta,
-    retry: false,
-  })
-
-  const fecha = cajaAbierta
-    ? new Date(cajaAbierta.fechaApertura).toISOString().slice(0, 10)
-    : todayISO()
-
+  const [fecha, setFecha] = useState(todayISO())
   const [registrando, setRegistrando] = useState(false)
+  const [busqueda, setBusqueda] = useState('')
   const [ajuste, setAjuste] = useState<{
     registro: InventarioDiario
     tipo: 'entrada' | 'salida'
@@ -42,6 +33,14 @@ export function InventarioTab() {
   })
 
   const hayInventario = (inventario?.length ?? 0) > 0
+  const inventarioFiltrado = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase()
+    if (!termino) return inventario ?? []
+
+    return (inventario ?? []).filter((registro) =>
+      (registro.idProducto?.nombre ?? '').toLowerCase().includes(termino),
+    )
+  }, [busqueda, inventario])
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
@@ -92,15 +91,24 @@ export function InventarioTab() {
         <input
           type="date"
           value={fecha}
-          readOnly
-          disabled
-          className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-600 outline-none"
+          onChange={(e) => setFecha(e.target.value)}
+          className="rounded-xl border border-gray-200 px-4 py-2 text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
         />
       </label>
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <input
+          type="text"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar producto..."
+          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+        />
+      </div>
       <p className="text-xs text-gray-500">
-        {cajaAbierta
-          ? `Inventario fijado por la caja abierta del ${formatFechaCorta(fecha)}.`
-          : `Inventario obligatorio para el día de hoy: ${formatFechaCorta(fecha)}.`}
+        {hayInventario
+          ? `Inventario del ${formatFechaCorta(fecha)}.`
+          : 'No hay inventario para esta fecha; se tomará el último registro disponible como base.'}
       </p>
 
       {isLoading ? (
@@ -113,45 +121,51 @@ export function InventarioTab() {
             <span className="w-20 text-right">Actual</span>
             <span className="w-16 text-right">Ajustar</span>
           </div>
-          {inventario.map((registro) => (
-            <div
-              key={registro.id}
-              className="flex items-center gap-3 border-t border-gray-50 px-4 py-3"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-gray-900">
-                  {registro.idProducto?.nombre ?? 'Producto'}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {registro.idProducto?.unidadMedida ?? ''}
-                </p>
-              </div>
-              <span className="w-20 text-right text-sm text-gray-600">
-                {registro.cantidadInicial}
-              </span>
-              <span className="w-20 text-right text-sm font-semibold text-gray-900">
-                {registro.cantidadActual}
-              </span>
-              <span className="flex w-16 shrink-0 justify-end gap-1">
-                <button
-                  type="button"
-                  title="Agregar entrada"
-                  onClick={() => setAjuste({ registro, tipo: 'entrada' })}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-green-600 transition-colors hover:bg-green-50"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  title="Registrar salida"
-                  onClick={() => setAjuste({ registro, tipo: 'salida' })}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-red-50"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-              </span>
+          {inventarioFiltrado.length === 0 ? (
+            <div className="px-4 py-6 text-center text-sm text-gray-400">
+              No hay productos que coincidan con la búsqueda.
             </div>
-          ))}
+          ) : (
+            inventarioFiltrado.map((registro) => (
+              <div
+                key={registro.id}
+                className="flex items-center gap-3 border-t border-gray-50 px-4 py-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-gray-900">
+                    {registro.idProducto?.nombre ?? 'Producto'}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {registro.idProducto?.unidadMedida ?? ''}
+                  </p>
+                </div>
+                <span className="w-20 text-right text-sm text-gray-600">
+                  {registro.cantidadInicial}
+                </span>
+                <span className="w-20 text-right text-sm font-semibold text-gray-900">
+                  {registro.cantidadActual}
+                </span>
+                <span className="flex w-16 shrink-0 justify-end gap-1">
+                  <button
+                    type="button"
+                    title="Agregar entrada"
+                    onClick={() => setAjuste({ registro, tipo: 'entrada' })}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-green-600 transition-colors hover:bg-green-50"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Registrar salida"
+                    onClick={() => setAjuste({ registro, tipo: 'salida' })}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-red-50"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                </span>
+              </div>
+            ))
+          )}
         </div>
       ) : (
         <p className="py-8 text-center text-sm text-gray-400">
@@ -357,7 +371,7 @@ function AjusteLoteModal({
                   <input
                     type="number"
                     min={0}
-                    step="0.01"
+                    step="1"
                     value={valores[producto.id] ?? ''}
                     onChange={(e) =>
                       setValores((prev) => ({
@@ -423,18 +437,25 @@ function RegistrarInventarioModal({
     queryFn: getProductos,
   })
 
-  const existentes = new Map(
-    (registros ?? []).map((r) => [r.idProducto?.id, r.cantidadInicial]),
-  )
+  const [valores, setValores] = useState<Record<number, string>>({})
+
   const precarga = new Map(
     (ultimo ?? []).map((r) => [r.idProducto?.id, r.cantidadActual]),
   )
-  const [valores, setValores] = useState<Record<number, string>>({})
 
   function valorDe(productoId: number): string {
     const editado = valores[productoId]
     if (editado !== undefined) return editado
-    const cantidad = existentes.get(productoId) ?? precarga.get(productoId)
+
+    const registroExistente = (registros ?? []).find(
+      (r) => r.idProducto?.id === productoId && r.fecha === fecha,
+    )
+
+    if (registroExistente) {
+      return String(registroExistente.cantidadInicial)
+    }
+
+    const cantidad = precarga.get(productoId)
     return cantidad != null ? String(cantidad) : ''
   }
 
@@ -481,7 +502,7 @@ function RegistrarInventarioModal({
               <input
                 type="number"
                 min={0}
-                step="0.01"
+                step="1"
                 value={valorDe(producto.id)}
                 onChange={(e) =>
                   setValores((prev) => ({

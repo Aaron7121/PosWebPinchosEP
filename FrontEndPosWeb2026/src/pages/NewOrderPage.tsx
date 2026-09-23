@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent, SyntheticEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Banknote,
   ChevronDown,
@@ -17,11 +17,14 @@ import { getCajaAbierta } from '../api/caja'
 import {
   getCategoriasActivas,
   getPlatosActivos,
+  getRecetasByPlato,
 } from '../api/catalogo'
-import { createPedido } from '../api/pedidos'
+import { getUltimoInventario } from '../api/inventario'
+import { createPedido, getDetallesPedido, getPedido, updatePedido } from '../api/pedidos'
 import type { Plato } from '../types/catalogo'
 import type { Pedido } from '../types/pos'
 import { formatCurrency } from '../utils/format'
+import { getInventoryCheck } from '../utils/inventario'
 import { uuid } from '../utils/uuid'
 import { CobroModal } from '../components/ui/CobroModal'
 
@@ -125,7 +128,13 @@ export function NewOrderPage() {
 }
 
 function OrderPOS() {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const editPedidoIdParam = searchParams.get('pedidoId')
+  const editPedidoId =
+    editPedidoIdParam != null && editPedidoIdParam !== '' ? Number(editPedidoIdParam) : null
+  const isEditMode = searchParams.get('mode') === 'edit' && editPedidoId != null && !Number.isNaN(editPedidoId)
   const [categoryId, setCategoryId] = useState<number | null>(null)
   const [expandedSubcategories, setExpandedSubcategories] = useState<Set<number>>(
     new Set(),
@@ -137,10 +146,40 @@ function OrderPOS() {
   const [comentario, setComentario] = useState('')
   const [cartOpen, setCartOpen] = useState(false)
   const [cartDragOffset, setCartDragOffset] = useState(0)
+  const [inventoryWarning, setInventoryWarning] = useState('')
   const idempotencyKeyRef = useRef<string | undefined>(undefined)
   const cartBarStartYRef = useRef<number | null>(null)
   const cartSheetStartYRef = useRef<number | null>(null)
   const [pedidoACobrar, setPedidoACobrar] = useState<Pedido | null>(null)
+
+  const { data: pedidoEditar } = useQuery({
+    queryKey: ['pedidos', editPedidoId],
+    queryFn: () => getPedido(Number(editPedidoId)),
+    enabled: isEditMode && editPedidoId != null,
+  })
+
+  const { data: detallesPedidoEditar = [] } = useQuery({
+    queryKey: ['pedidos', editPedidoId, 'detalles'],
+    queryFn: () => getDetallesPedido(Number(editPedidoId)),
+    enabled: isEditMode && editPedidoId != null,
+  })
+
+  useEffect(() => {
+    if (!isEditMode || detallesPedidoEditar.length === 0) return
+
+    const nextCart = detallesPedidoEditar
+      .filter((detalle) => detalle.idPlato != null)
+      .map((detalle) => ({
+        plato: detalle.idPlato as Plato,
+        cantidad: detalle.cantidad ?? 0,
+      }))
+      .filter((item) => item.cantidad > 0)
+
+    setCart(nextCart)
+    setTipoServicio(pedidoEditar?.tipoServicio ?? 'MESA')
+    setNumMesa(pedidoEditar?.numMesa != null ? String(pedidoEditar.numMesa) : '')
+    setComentario(pedidoEditar?.comentario ?? '')
+  }, [detallesPedidoEditar, isEditMode, pedidoEditar])
 
   const { data: categorias } = useQuery({
     queryKey: ['categorias'],
@@ -151,6 +190,27 @@ function OrderPOS() {
     queryKey: ['platos', categoryId],
     queryFn: getPlatosActivos,
   })
+
+  const { data: inventarioActual = [] } = useQuery({
+    queryKey: ['inventario-ultimo'],
+    queryFn: getUltimoInventario,
+  })
+
+  const { data: recetasPorPlato = {} } = useQuery({
+    queryKey: ['recetas-por-plato', (platos ?? []).map((plato) => plato.id).join(',')],
+    queryFn: async () => {
+      const platosActuales = platos ?? []
+      const entries = await Promise.all(
+        platosActuales.map(async (plato) => [plato.id, await getRecetasByPlato(plato.id)] as const),
+      )
+      return Object.fromEntries(entries)
+    },
+    enabled: (platos ?? []).length > 0,
+  })
+
+  const inventoryStatus = getInventoryCheck(cart, inventarioActual, recetasPorPlato)
+  const inventorySummary = inventoryStatus.message
+  const activeInventoryWarning = inventoryWarning || inventorySummary
 
   const categoriasRaiz = (categorias ?? []).filter(
     (categoria) => categoria.categoriaPadre == null,
@@ -175,22 +235,45 @@ function OrderPOS() {
 
   function addItem(plato: Plato) {
     setCart((prev) => {
-      const existente = prev.find((i) => i.plato.id === plato.id)
-      if (existente) {
-        return prev.map((i) =>
-          i.plato.id === plato.id ? { ...i, cantidad: i.cantidad + 1 } : i,
-        )
+      const nextCart = (() => {
+        const existente = prev.find((i) => i.plato.id === plato.id)
+        if (existente) {
+          return prev.map((i) =>
+            i.plato.id === plato.id ? { ...i, cantidad: i.cantidad + 1 } : i,
+          )
+        }
+        return [...prev, { plato, cantidad: 1 }]
+      })()
+
+      const validation = getInventoryCheck(nextCart, inventarioActual, recetasPorPlato)
+      if (!validation.canContinue) {
+        setInventoryWarning(validation.message)
+        return prev
       }
-      return [...prev, { plato, cantidad: 1 }]
+
+      setInventoryWarning('')
+      return nextCart
     })
   }
 
   function setCantidad(platoId: number, cantidad: number) {
-    setCart((prev) =>
-      cantidad <= 0
-        ? prev.filter((i) => i.plato.id !== platoId)
-        : prev.map((i) => (i.plato.id === platoId ? { ...i, cantidad } : i)),
-    )
+    setCart((prev) => {
+      const nextCart =
+        cantidad <= 0
+          ? prev.filter((i) => i.plato.id !== platoId)
+          : prev.map((i) => (i.plato.id === platoId ? { ...i, cantidad } : i))
+
+      if (cantidad > 0) {
+        const validation = getInventoryCheck(nextCart, inventarioActual, recetasPorPlato)
+        if (!validation.canContinue) {
+          setInventoryWarning(validation.message)
+          return prev
+        }
+      }
+
+      setInventoryWarning('')
+      return nextCart
+    })
   }
 
   const mutation = useMutation({
@@ -220,10 +303,50 @@ function OrderPOS() {
     },
   })
 
-  function handleCobrar(e: SyntheticEvent, cobrar: boolean) {
+  const updateMutation = useMutation({
+    mutationFn: () =>
+      updatePedido(Number(editPedidoId), {
+        tipoServicio,
+        numMesa: numMesa === '' ? undefined : Number(numMesa),
+        comentario: comentario || undefined,
+        detalles: cart.map((i) => ({ idPlato: i.plato.id, cantidad: i.cantidad })),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] })
+      queryClient.invalidateQueries({ queryKey: ['pedidos', editPedidoId, 'detalles'] })
+      navigate('/pedidos')
+    },
+  })
+
+  function handleCobrar(e: SyntheticEvent, cobrar = false) {
     e.preventDefault()
     if (cart.length === 0) return
+
+    const validation = getInventoryCheck(cart, inventarioActual, recetasPorPlato)
+    if (!validation.canContinue) {
+      setInventoryWarning(validation.message)
+      return
+    }
+
     mutation.mutate({ cobrar })
+  }
+
+  function handleGuardarPedido(e: SyntheticEvent) {
+    e.preventDefault()
+
+    if (!isEditMode || editPedidoId == null) return
+    if (cart.length === 0) {
+      setInventoryWarning('Debes dejar al menos un plato en el pedido.')
+      return
+    }
+
+    const validation = getInventoryCheck(cart, inventarioActual, recetasPorPlato)
+    if (!validation.canContinue) {
+      setInventoryWarning(validation.message)
+      return
+    }
+
+    updateMutation.mutate()
   }
 
   function cerrarCobro() {
@@ -282,18 +405,31 @@ function OrderPOS() {
     setCartDragOffset(0)
   }
 
-  const panelProps = {
+  const pageTitle = isEditMode ? `Editar pedido${pedidoEditar?.id ? ` #${pedidoEditar.id}` : ''}` : 'Nuevo pedido'
+  const closeOrder = () => {
+    if (isEditMode) {
+      navigate('/pedidos')
+      return
+    }
+    setCartOpen(false)
+  }
+
+  const panelProps: OrderPanelProps = {
     cart,
     total,
     tipoServicio,
     numMesa,
     comentario,
-    isPending: mutation.isPending,
-    error: mutation.error,
+    mode: isEditMode ? 'edit' : 'create',
+    isPending: isEditMode ? updateMutation.isPending : mutation.isPending,
+    error: isEditMode ? updateMutation.error : mutation.error,
+    inventoryWarning: activeInventoryWarning,
     onSetCantidad: setCantidad,
     onTipoServicioChange: setTipoServicio,
     onNumMesaChange: setNumMesa,
     onComentarioChange: setComentario,
+    onClose: closeOrder,
+    onSubmit: isEditMode ? handleGuardarPedido : handleCobrar,
   }
 
   return (
@@ -301,7 +437,7 @@ function OrderPOS() {
       {/* Área central: productos */}
       <section className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-16 items-center gap-4 border-b border-gray-100 bg-white px-6">
-          <h1 className="text-lg font-bold text-gray-900">Nuevo pedido</h1>
+          <h1 className="text-lg font-bold text-gray-900">{pageTitle}</h1>
           <div className="relative ml-auto w-full max-w-xs">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
@@ -361,76 +497,48 @@ function OrderPOS() {
 
                 return (
                   <div key={categoria.id} className="contents">
-                    <div className="flex flex-col overflow-hidden rounded-3xl border border-orange-200 bg-orange-50 text-left transition-all hover:border-orange-300 hover:bg-orange-100 hover:shadow-md">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setExpandedSubcategories((prev) => {
-                            const next = new Set(prev)
-                            if (next.has(categoria.id)) next.delete(categoria.id)
-                            else next.add(categoria.id)
-                            return next
-                          })
-                        }
-                        className="group relative flex min-h-40 flex-col items-start justify-between p-5 text-left"
-                      >
-                        <span className="absolute right-4 top-4 rounded-full border border-orange-200 bg-white/80 px-2.5 py-1 text-[10px] font-bold tracking-wide text-orange-700">
-                          Subcategoría
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedSubcategories((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(categoria.id)) next.delete(categoria.id)
+                          else next.add(categoria.id)
+                          return next
+                        })
+                      }
+                      className="group relative flex min-h-40 flex-col items-start justify-between overflow-hidden rounded-3xl border border-orange-200 bg-orange-50 p-5 text-left transition-all hover:-translate-y-1 hover:border-orange-300 hover:bg-orange-100 hover:shadow-md"
+                    >
+                      <span className="absolute right-4 top-4 rounded-full border border-orange-200 bg-white/80 px-2.5 py-1 text-[10px] font-bold tracking-wide text-orange-700">
+                        Subcategoría
+                      </span>
+                      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-sm transition-transform group-hover:scale-105">
+                        {expanded ? (
+                          <ChevronDown className="h-5 w-5" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5" />
+                        )}
+                      </span>
+                      <span className="mt-6">
+                        <span className="flex items-center gap-2 text-lg font-bold text-sky-950">
+                          <Layers3 className="h-4 w-4 text-orange-600" />
+                          {categoria.nombre}
                         </span>
-                        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-sm transition-transform group-hover:scale-105">
-                          {expanded ? (
-                            <ChevronDown className="h-5 w-5" />
-                          ) : (
-                            <ChevronRight className="h-5 w-5" />
-                          )}
+                        <span className="mt-1 block text-sm text-orange-700/80">
+                          {platosSubcategoria.length} plato
+                          {platosSubcategoria.length === 1 ? '' : 's'}
                         </span>
-                        <span className="mt-6">
-                          <span className="flex items-center gap-2 text-lg font-bold text-sky-950">
-                            <Layers3 className="h-4 w-4 text-orange-600" />
-                            {categoria.nombre}
-                          </span>
-                          <span className="mt-1 block text-sm text-orange-700/80">
-                            {platosSubcategoria.length} plato
-                            {platosSubcategoria.length === 1 ? '' : 's'}
-                          </span>
-                        </span>
-                      </button>
-                      {expanded && (
-                        <div className="border-t border-orange-200/80 px-3 pb-3">
-                          {platosSubcategoria.length === 0 ? (
-                            <p className="px-2 pt-3 text-sm text-orange-700/70">
-                              No hay platos disponibles.
-                            </p>
-                          ) : (
-                            <div className="flex flex-col gap-2 pt-3">
-                              {platosSubcategoria.map((plato) => (
-                                <div
-                                  key={plato.id}
-                                  className="flex items-center gap-3 rounded-2xl border border-orange-100 bg-white px-3 py-2.5"
-                                >
-                                  <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-semibold text-gray-900">
-                                      {plato.nombre}
-                                    </p>
-                                    <p className="text-sm text-gray-500">
-                                      {formatCurrency(plato.precio)}
-                                    </p>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => addItem(plato)}
-                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white transition-colors hover:bg-orange-600"
-                                    aria-label={`Agregar ${plato.nombre}`}
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                      </span>
+                    </button>
+                    {expanded &&
+                      platosSubcategoria.map((p) => (
+                        <PlatoCard
+                          key={p.id}
+                          plato={p}
+                          onAdd={addItem}
+                          destacado
+                        />
+                      ))}
                   </div>
                 )
               })}
@@ -444,11 +552,7 @@ function OrderPOS() {
 
       {/* Carrito de escritorio */}
       <aside className="hidden w-80 shrink-0 flex-col border-l border-gray-100 bg-white shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] lg:flex">
-        <OrderPanel
-          {...panelProps}
-          onClose={undefined}
-          onSubmit={handleCobrar}
-        />
+        <OrderPanel {...panelProps} />
       </aside>
 
       {/* Barra inferior móvil */}
@@ -483,8 +587,6 @@ function OrderPOS() {
           >
             <OrderPanel
               {...panelProps}
-              onClose={() => setCartOpen(false)}
-              onSubmit={handleCobrar}
               onDragStart={handleCartSheetPointerDown}
               onDragMove={handleCartSheetPointerMove}
               onDragEnd={handleCartSheetPointerUp}
@@ -522,6 +624,8 @@ interface OrderPanelProps {
   tipoServicio: string
   numMesa: string
   comentario: string
+  inventoryWarning?: string
+  mode?: 'create' | 'edit'
   isPending: boolean
   error: unknown
   onClose?: () => void
@@ -533,7 +637,7 @@ interface OrderPanelProps {
   onTipoServicioChange: (v: string) => void
   onNumMesaChange: (v: string) => void
   onComentarioChange: (v: string) => void
-  onSubmit: (e: SyntheticEvent, pagar: boolean) => void
+  onSubmit: (e: SyntheticEvent, pagar?: boolean) => void
 }
 
 function OrderPanel({
@@ -542,6 +646,8 @@ function OrderPanel({
   tipoServicio,
   numMesa,
   comentario,
+  inventoryWarning,
+  mode = 'create',
   isPending,
   error,
   onClose,
@@ -556,6 +662,7 @@ function OrderPanel({
   onSubmit,
 }: OrderPanelProps) {
   const hayItems = cart.length > 0
+  const isEditMode = mode === 'edit'
 
   return (
     <div className="flex h-full flex-col">
@@ -641,6 +748,11 @@ function OrderPanel({
                 </span>
               </div>
             ))}
+            {inventoryWarning ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                {inventoryWarning}
+              </div>
+            ) : null}
           </div>
         )}
       </div>
@@ -700,22 +812,44 @@ function OrderPanel({
           <span>Total</span>
           <span>{formatCurrency(total)}</span>
         </div>
-        <button
-          type="button"
-          disabled={!hayItems || isPending}
-          onClick={(e) => onSubmit(e, true)}
-          className="mt-2 w-full rounded-xl bg-green-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-green-600 disabled:opacity-50"
-        >
-          {isPending ? 'Procesando...' : 'Cobrar'}
-        </button>
-        <button
-          type="button"
-          disabled={!hayItems || isPending}
-          onClick={(e) => onSubmit(e, false)}
-          className="mt-2 w-full rounded-xl bg-orange-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
-        >
-          Crear pedido (pago pendiente)
-        </button>
+        {isEditMode ? (
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-xl border border-gray-200 px-4 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+            >
+              Cerrar
+            </button>
+            <button
+              type="button"
+              disabled={!hayItems || isPending}
+              onClick={(e) => onSubmit(e, false)}
+              className="flex-1 rounded-xl bg-orange-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
+            >
+              {isPending ? 'Guardando...' : 'Guardar pedido'}
+            </button>
+          </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              disabled={!hayItems || isPending}
+              onClick={(e) => onSubmit(e, true)}
+              className="mt-2 w-full rounded-xl bg-green-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-green-600 disabled:opacity-50"
+            >
+              {isPending ? 'Procesando...' : 'Cobrar'}
+            </button>
+            <button
+              type="button"
+              disabled={!hayItems || isPending}
+              onClick={(e) => onSubmit(e, false)}
+              className="mt-2 w-full rounded-xl bg-orange-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
+            >
+              Crear pedido (pago pendiente)
+            </button>
+          </>
+        )}
       </footer>
     </div>
   )

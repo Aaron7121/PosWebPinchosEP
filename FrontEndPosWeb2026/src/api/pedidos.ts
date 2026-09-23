@@ -20,6 +20,13 @@ export function createPedido(payload: PedidoRequest) {
   })
 }
 
+export function updatePedido(id: number, payload: PedidoRequest) {
+  return request<Pedido>(`/pedidos/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function cambiarEstadoPedido(id: number, estadoPedido: string) {
   return request<Pedido>(`/pedidos/${id}/estado`, {
     method: 'PATCH',

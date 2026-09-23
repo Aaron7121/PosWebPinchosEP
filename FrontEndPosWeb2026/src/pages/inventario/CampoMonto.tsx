@@ -4,12 +4,14 @@ export function CampoMonto({
   onChange,
   placeholder,
   min,
+  step = 1,
 }: {
   label: string
   value: string
   onChange: (v: string) => void
   placeholder?: string
   min?: number
+  step?: number
 }) {
   return (
     <label className="flex flex-col gap-1">
@@ -17,7 +19,7 @@ export function CampoMonto({
       <input
         type="number"
         min={min}
-        step="0.01"
+        step={step}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

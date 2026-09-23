@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus, Trash2, UtensilsCrossed } from 'lucide-react'
+import { Pencil, Plus, Search, Trash2, UtensilsCrossed } from 'lucide-react'
 import {
   deletePlato,
   getCategorias,
@@ -35,6 +35,7 @@ function rutaCategoria(
 export function PlatosPage() {
   const queryClient = useQueryClient()
   const [categoriaId, setCategoriaId] = useState<number | null>(null)
+  const [busqueda, setBusqueda] = useState('')
 
   const { data: categorias } = useQuery({
     queryKey: ['categorias'],
@@ -60,6 +61,11 @@ export function PlatosPage() {
     }
   }
 
+  const textoBusqueda = busqueda.trim().toLowerCase()
+  const platosFiltrados = (platos ?? []).filter((plato) =>
+    textoBusqueda === '' || plato.nombre.toLowerCase().includes(textoBusqueda),
+  )
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -76,6 +82,17 @@ export function PlatosPage() {
           <Plus className="h-4 w-4" />
           Nuevo plato
         </Link>
+      </div>
+
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <input
+          type="search"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar plato..."
+          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+        />
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
@@ -108,9 +125,9 @@ export function PlatosPage() {
 
       {isLoading ? (
         <p className="py-8 text-center text-sm text-gray-400">Cargando...</p>
-      ) : platos && platos.length > 0 ? (
+      ) : platosFiltrados.length > 0 ? (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-          {platos.map((plato) => (
+          {platosFiltrados.map((plato) => (
             <div
               key={plato.id}
               className="flex flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm"
@@ -160,7 +177,9 @@ export function PlatosPage() {
       ) : (
         <div className="flex flex-col items-center gap-2 py-12 text-center">
           <UtensilsCrossed className="h-8 w-8 text-gray-300" />
-          <p className="text-sm text-gray-400">No hay platos registrados.</p>
+          <p className="text-sm text-gray-400">
+            {textoBusqueda ? 'No se encontraron platos.' : 'No hay platos registrados.'}
+          </p>
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Package, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Package, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import {
   createProducto,
   deleteProducto,
@@ -22,6 +22,7 @@ export function ProductosPage() {
 
   const [isCreating, setIsCreating] = useState(false)
   const [editing, setEditing] = useState<Producto | null>(null)
+  const [busqueda, setBusqueda] = useState('')
 
   const deleteMutation = useMutation({
     mutationFn: deleteProducto,
@@ -33,6 +34,11 @@ export function ProductosPage() {
       deleteMutation.mutate(producto.id)
     }
   }
+
+  const textoBusqueda = busqueda.trim().toLowerCase()
+  const productosFiltrados = (productos ?? []).filter((producto) =>
+    textoBusqueda === '' || (producto.nombre ?? '').toLowerCase().includes(textoBusqueda),
+  )
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
@@ -53,11 +59,22 @@ export function ProductosPage() {
         </button>
       </div>
 
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <input
+          type="search"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar producto..."
+          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+        />
+      </div>
+
       {isLoading ? (
         <p className="py-8 text-center text-sm text-gray-400">Cargando...</p>
-      ) : productos && productos.length > 0 ? (
+      ) : productosFiltrados.length > 0 ? (
         <div className="flex flex-col gap-3">
-          {productos.map((producto) => (
+          {productosFiltrados.map((producto) => (
             <div
               key={producto.id}
               className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
@@ -100,7 +117,7 @@ export function ProductosPage() {
         </div>
       ) : (
         <p className="py-8 text-center text-sm text-gray-400">
-          No hay productos registrados.
+          {textoBusqueda ? 'No se encontraron productos.' : 'No hay productos registrados.'}
         </p>
       )}
 
