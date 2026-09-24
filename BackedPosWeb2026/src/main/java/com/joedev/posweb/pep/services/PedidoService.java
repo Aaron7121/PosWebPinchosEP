@@ -77,13 +77,22 @@ public class PedidoService {
     @Inject
     IdempotenciaService idempotencia;
 
+    @Transactional
     public List<Pedido> listarTodos() {
         Optional<Caja> abierta = cajaRepository.findAbierta();
         if (abierta.isEmpty()) {
             return List.of();
         }
         OffsetDateTime desde = abierta.get().getFechaApertura().atOffset(ZoneOffset.UTC);
-        return repository.find("fecha >= ?1 order by fecha desc", desde).list();
+        List<Pedido> pedidos = repository.find("fecha >= ?1 order by fecha desc", desde).list();
+        for (Pedido pedido : pedidos) {
+            String estadoAnterior = pedido.getEstadoPedido();
+            sincronizarEstadoConPago(pedido);
+            if (!estadoAnterior.equals(pedido.getEstadoPedido())) {
+                repository.persistAndFlush(pedido);
+            }
+        }
+        return pedidos;
     }
 
     public Pedido obtenerPorId(Integer id) {
@@ -264,7 +273,7 @@ public class PedidoService {
         if ("CANCELADO".equals(pedido.getEstadoPedido())) {
             throw new ConflictoException("El pedido ya está cancelado");
         }
-        if ("ENTREGADO".equals(pedido.getEstadoPedido())) {
+        if ("ENTREGADO".equals(pedido.getEstadoPedido()) || "COMPLETADO".equals(pedido.getEstadoPedido())) {
             throw new ConflictoException("No se puede cancelar un pedido entregado");
         }
 
@@ -295,7 +304,11 @@ public class PedidoService {
             throw new DatoInvalidoException("El estado del pedido debe ser uno de: " + ESTADOS_PEDIDO);
         }
         Pedido pedido = obtenerEntidad(id);
+        if ("COMPLETADO".equals(estado) && !"PAGADO".equals(pedido.getEstadoPago())) {
+            throw new DatoInvalidoException("Un pedido solo puede completarse cuando está pagado");
+        }
         pedido.setEstadoPedido(estado);
+        sincronizarEstadoConPago(pedido);
         repository.persistAndFlush(pedido);
         notifier.emitir("pedido:actualizado", Map.of("id", id));
         if ("ENTREGADO".equals(estado)) {
@@ -311,9 +324,21 @@ public class PedidoService {
         }
         Pedido pedido = obtenerEntidad(id);
         pedido.setEstadoPago(estado);
+        sincronizarEstadoConPago(pedido);
         repository.persistAndFlush(pedido);
         notifier.emitir("pedido:actualizado", Map.of("id", id));
         return pedido;
+    }
+
+    public void sincronizarEstadoConPago(Pedido pedido) {
+        if ("CANCELADO".equals(pedido.getEstadoPedido())) {
+            return;
+        }
+        if ("ENTREGADO".equals(pedido.getEstadoPedido()) && "PAGADO".equals(pedido.getEstadoPago())) {
+            pedido.setEstadoPedido("COMPLETADO");
+        } else if ("COMPLETADO".equals(pedido.getEstadoPedido()) && !"PAGADO".equals(pedido.getEstadoPago())) {
+            pedido.setEstadoPedido("ENTREGADO");
+        }
     }
 
     private void descontarStock(Pedido pedido, Plato plato, Integer cantidad) {

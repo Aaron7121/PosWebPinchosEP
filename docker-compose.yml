@@ -42,6 +42,9 @@ services:
       - backend-api
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./FrontEndPosWeb2026/certs:/etc/nginx/certs:ro
 
 volumes:
   pos-data:

@@ -50,6 +50,9 @@ public class DetallePagoService {
     @Inject
     NotificationService notifier;
 
+    @Inject
+    PedidoService pedidoService;
+
     public List<DetallePago> listarPorPedido(Integer idPedido) {
         obtenerPedido(idPedido);
         return repository.listByPedidoId(idPedido);
@@ -120,6 +123,7 @@ public class DetallePagoService {
         boolean pagadoCompleto = totalPagado.compareTo(pedido.getTotal()) == 0;
         if (pagadoCompleto) {
             pedido.setEstadoPago("PAGADO");
+            pedidoService.sincronizarEstadoConPago(pedido);
             pedidoRepository.persistAndFlush(pedido);
         }
         repository.flush();
@@ -144,6 +148,7 @@ public class DetallePagoService {
             BigDecimal restante = repository.sumByPedidoId(pedido.getId());
             if (restante.compareTo(pedido.getTotal()) < 0 && "PAGADO".equals(pedido.getEstadoPago())) {
                 pedido.setEstadoPago("PENDIENTE");
+                pedidoService.sincronizarEstadoConPago(pedido);
                 pedidoRepository.persistAndFlush(pedido);
             }
             notifier.emitir("pedido:actualizado", Map.of("id", pedido.getId()));

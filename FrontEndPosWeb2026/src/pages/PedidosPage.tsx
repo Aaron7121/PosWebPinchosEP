@@ -35,12 +35,14 @@ import { DividirModal } from '../components/ui/DividirModal'
 const COLOR_ESTADO: Record<string, string> = {
   PENDIENTE: 'bg-amber-100 text-amber-700',
   ENTREGADO: 'bg-green-100 text-green-700',
+  COMPLETADO: 'bg-blue-100 text-blue-700',
   CANCELADO: 'bg-gray-200 text-gray-500',
 }
 
 const ETIQUETA_ESTADO: Record<string, string> = {
   PENDIENTE: 'Pendiente',
   ENTREGADO: 'Entregado',
+  COMPLETADO: 'Completado',
   CANCELADO: 'Cancelado',
 }
 
@@ -68,14 +70,15 @@ function cumpleTab(pedido: Pedido, tab: Tab): boolean {
     case 'CANCELADO':
       return pedido.estadoPedido === 'CANCELADO'
     case 'COMPLETADO':
-      return pedido.estadoPedido === 'ENTREGADO' && pedido.estadoPago === 'PAGADO'
+      return pedido.estadoPedido === 'COMPLETADO'
   }
 }
 
 function tabPara(pedido: Pedido): Tab {
   if (pedido.estadoPedido === 'CANCELADO') return 'CANCELADO'
   if (pedido.estadoPedido === 'PENDIENTE') return 'PENDIENTE'
-  return pedido.estadoPago === 'PAGADO' ? 'COMPLETADO' : 'ENTREGADO'
+  if (pedido.estadoPedido === 'COMPLETADO') return 'COMPLETADO'
+  return 'ENTREGADO'
 }
 
 export function PedidosPage() {
