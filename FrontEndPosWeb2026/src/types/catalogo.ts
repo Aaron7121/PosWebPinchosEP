@@ -21,6 +21,7 @@ export interface Producto {
   unidadMedida: string | null
   esContable: boolean | null
   stockMinimo: number | null
+  activo:boolean | null
 }
 
 export interface RecetaPlatoProducto {

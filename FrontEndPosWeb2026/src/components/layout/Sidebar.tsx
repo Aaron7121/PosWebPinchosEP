@@ -3,7 +3,7 @@ import { BarChart3, Boxes, ClipboardList, Download, LogOut, ReceiptText, Setting
 import { useAuthStore } from '../../store/auth'
 import { useInstallPrompt } from '../../hooks/useInstallPrompt'
 import { SoundToggle } from '../ui/SoundToggle'
-import logoNegocio from '../../assets/logoNegocio.png'
+import logoNegocio from '../../api/assets/logoNegocio.png'
 
 
 const navItems = [

@@ -31,7 +31,7 @@ public class ProductoResource {
 
     @GET
     public List<Producto> listarTodos() {
-        return service.listarTodos();
+        return service.listarActivos();
     }
 
     @GET

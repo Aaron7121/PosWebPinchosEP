@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import { LogIn } from 'lucide-react'
 import { login } from '../api/auth'
 import { useAuthStore } from '../store/auth'
-import logoNegocio from '../assets/logoNegocio.png'
+import logoNegocio from '../api/assets/logoNegocio.png'
 
 export function LoginPage() {
   const navigate = useNavigate()

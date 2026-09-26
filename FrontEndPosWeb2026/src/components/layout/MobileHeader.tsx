@@ -1,5 +1,5 @@
 import { Menu } from 'lucide-react'
-import logoNegocio from '../../assets/logoNegocio.png'
+import logoNegocio from '../../api/assets/logoNegocio.png'
 import { SoundToggle } from '../ui/SoundToggle'
 
 interface MobileHeaderProps {

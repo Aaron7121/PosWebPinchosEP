@@ -84,7 +84,8 @@ export function deletePlato(id: number) {
 
 // Productos
 export function getProductos() {
-  return request<Producto[]>('/productos')
+  return request<Producto[]>('/productos/activos'
+      )
 }
 
 export function getProducto(id: number) {
