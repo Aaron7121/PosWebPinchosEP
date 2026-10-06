@@ -1,34 +1,31 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
-IP="${1:-$(hostname -I | awk '{print $1}')}"
-CERT_DIR="$(pwd)/FrontEndPosWeb2026/certs"
-
-if ! docker info >/dev/null 2>&1; then
-  echo "Error: Docker no está disponible o tu usuario no tiene permisos."
-  exit 1
-fi
-
-if [[ ! -f docker-compose.yml ]]; then
-  echo "Error: ejecuta este script desde la carpeta que contiene docker-compose.yml."
-  exit 1
-fi
+CERT_DIR="${CERT_DIR:-/etc/nginx/certs}"
+CERT_HOST="${CERT_HOST:-localhost}"
+CERT_FILE="$CERT_DIR/pos-web.crt"
+KEY_FILE="$CERT_DIR/pos-web.key"
 
 mkdir -p "$CERT_DIR"
 
-docker run --rm \
-  -v "$CERT_DIR:/certs" \
-  alpine:latest \
-  sh -c "apk add --no-cache openssl >/dev/null 2>&1 &&
-    openssl req -x509 -nodes -newkey rsa:2048 \
-      -keyout /certs/pos-web.key \
-      -out /certs/pos-web.crt \
-      -days 365 \
-      -subj '/CN=$IP' \
-      -addext 'subjectAltName=IP:$IP'"
+if [ -s "$CERT_FILE" ] && [ -s "$KEY_FILE" ] \
+  && openssl x509 -in "$CERT_FILE" -noout >/dev/null 2>&1 \
+  && openssl pkey -in "$KEY_FILE" -noout >/dev/null 2>&1; then
+    echo "Usando certificado existente para $CERT_HOST."
+    exit 0
+fi
 
-chmod 600 "$CERT_DIR/pos-web.key"
+case "$CERT_HOST" in
+    *[!0-9.]* ) SUBJECT_ALT_NAME="DNS:$CERT_HOST" ;;
+    * ) SUBJECT_ALT_NAME="IP:$CERT_HOST" ;;
+esac
 
-echo "Certificado creado para: $IP"
-echo "Archivo público: $CERT_DIR/pos-web.crt"
-echo "Ahora ejecuta: docker compose up -d --build frontend-web"
+openssl req -x509 -nodes -newkey rsa:2048 \
+    -keyout "$KEY_FILE" \
+    -out "$CERT_FILE" \
+    -days 365 \
+    -subj "/CN=$CERT_HOST" \
+    -addext "subjectAltName=$SUBJECT_ALT_NAME"
+
+chmod 600 "$KEY_FILE"
+echo "Certificado autofirmado creado para $CERT_HOST en $CERT_DIR."

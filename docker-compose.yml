@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   postgres-db:
@@ -40,11 +39,16 @@ services:
     restart: unless-stopped
     depends_on:
       - backend-api
+    entrypoint: ["/bin/sh", "/docker-start.sh"]
+    command: ["nginx", "-g", "daemon off;"]
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      CERT_HOST: ${CERT_HOST:-localhost}
     volumes:
-      - ./FrontEndPosWeb2026/certs:/etc/nginx/certs:ro
+      - ./FrontEndPosWeb2026/certs:/etc/nginx/certs
+      - ./generar-certificado.sh:/usr/local/bin/generar-certificado.sh:ro
 
 volumes:
   pos-data:
