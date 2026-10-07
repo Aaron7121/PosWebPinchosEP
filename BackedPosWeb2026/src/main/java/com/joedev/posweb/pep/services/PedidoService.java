@@ -43,6 +43,7 @@ public class PedidoService {
 
     public static final Set<String> ESTADOS_PEDIDO = Set.of("PENDIENTE", "ENTREGADO", "COMPLETADO", "CANCELADO");
     public static final Set<String> ESTADOS_PAGO = Set.of("PENDIENTE", "PAGADO");
+    private static final BigDecimal RECARGO_DOMICILIO_POR_PLATO = new BigDecimal("0.10");
 
     @Inject
     PedidoRepository repository;
@@ -187,6 +188,7 @@ public class PedidoService {
             descontarStock(pedido, plato, detalleRequest.cantidad());
         }
 
+        total = total.add(cargosDomicilio(pedido.getTipoServicio(), request));
         pedido.setTotal(total.setScale(2, RoundingMode.HALF_UP));
         repository.persistAndFlush(pedido);
         notifier.emitir("pedido:nuevo", Map.of("id", pedido.getId(), "total", pedido.getTotal()));
@@ -260,11 +262,34 @@ public class PedidoService {
             descontarStock(pedido, plato, detalleRequest.cantidad());
         }
 
+        total = total.add(cargosDomicilio(pedido.getTipoServicio(), request));
         pedido.setTotal(total.setScale(2, RoundingMode.HALF_UP));
         repository.persistAndFlush(pedido);
         notifier.emitir("pedido:actualizado", Map.of("id", id));
         notifier.emitir("inventario:modificado", Map.of());
         return pedido;
+    }
+
+    private BigDecimal cargosDomicilio(String tipoServicio, PedidoRequest request) {
+        if (!"DELIVERY".equals(tipoServicio)) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal envio = request.costoEnvio() == null ? BigDecimal.ZERO : request.costoEnvio();
+        if (envio.signum() < 0) {
+            throw new DatoInvalidoException("El costo de envío no puede ser negativo");
+        }
+        int unidades = request.detalles().stream()
+                .filter(d -> !esBebida(d.idPlato()))
+                .mapToInt(DetalleRequest::cantidad)
+                .sum();
+        return RECARGO_DOMICILIO_POR_PLATO.multiply(BigDecimal.valueOf(unidades)).add(envio);
+    }
+
+    private boolean esBebida(Integer idPlato) {
+        return platoRepository.findByIdOptional(idPlato)
+                .map(Plato::getIdCategoria)
+                .map(c -> "Bebidas".equalsIgnoreCase(c.getNombre()))
+                .orElse(false);
     }
 
     @Transactional

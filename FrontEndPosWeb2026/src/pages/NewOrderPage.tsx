@@ -24,6 +24,14 @@ import { createPedido, getDetallesPedido, getPedido, updatePedido } from '../api
 import type { Plato } from '../types/catalogo'
 import type { Pedido } from '../types/pos'
 import { formatCurrency } from '../utils/format'
+
+const RECARGO_DOMICILIO = 0.1
+
+function unidadesConRecargo(items: CartItem[]) {
+  return items
+    .filter((i) => i.plato.idCategoria?.nombre?.toLowerCase() !== 'bebidas')
+    .reduce((suma, i) => suma + i.cantidad, 0)
+}
 import { getInventoryCheck } from '../utils/inventario'
 import { uuid } from '../utils/uuid'
 import { CobroModal } from '../components/ui/CobroModal'
@@ -144,6 +152,7 @@ function OrderPOS() {
   const [tipoServicio, setTipoServicio] = useState('MESA')
   const [numMesa, setNumMesa] = useState('')
   const [comentario, setComentario] = useState('')
+  const [costoEnvio, setCostoEnvio] = useState('')
   const [cartOpen, setCartOpen] = useState(false)
   const [cartDragOffset, setCartDragOffset] = useState(0)
   const [inventoryWarning, setInventoryWarning] = useState('')
@@ -179,6 +188,16 @@ function OrderPOS() {
     setTipoServicio(pedidoEditar?.tipoServicio ?? 'MESA')
     setNumMesa(pedidoEditar?.numMesa != null ? String(pedidoEditar.numMesa) : '')
     setComentario(pedidoEditar?.comentario ?? '')
+
+    if (pedidoEditar?.tipoServicio === 'DELIVERY') {
+      const base = nextCart.reduce(
+        (suma, item) => suma + (item.plato.precio ?? 0) * item.cantidad,
+        0,
+      )
+      const unidades = unidadesConRecargo(nextCart)
+      const envio = (pedidoEditar.total ?? 0) - base - unidades * RECARGO_DOMICILIO
+      setCostoEnvio(envio > 0.005 ? envio.toFixed(2) : '')
+    }
   }, [detallesPedidoEditar, isEditMode, pedidoEditar])
 
   const { data: categorias } = useQuery({
@@ -228,10 +247,15 @@ function OrderPOS() {
       ? (platos ?? []).filter(coincideBusqueda)
       : platosDeCategoria(categoryId).filter(coincideBusqueda)
 
-  const total = cart.reduce(
+  const subtotal = cart.reduce(
     (suma, item) => suma + (item.plato.precio ?? 0) * item.cantidad,
     0,
   )
+  const esDelivery = tipoServicio === 'DELIVERY'
+  const unidades = unidadesConRecargo(cart)
+  const recargoPlatos = esDelivery ? unidades * RECARGO_DOMICILIO : 0
+  const envio = esDelivery ? Math.max(Number(costoEnvio) || 0, 0) : 0
+  const total = subtotal + recargoPlatos + envio
 
   function addItem(plato: Plato) {
     setCart((prev) => {
@@ -286,6 +310,7 @@ function OrderPOS() {
         numMesa: numMesa === '' ? undefined : Number(numMesa),
         comentario: comentario || undefined,
         idempotencyKey: idempotencyKeyRef.current,
+        costoEnvio: esDelivery ? envio : undefined,
         detalles: cart.map((i) => ({ idPlato: i.plato.id, cantidad: i.cantidad })),
       })
     },
@@ -298,6 +323,7 @@ function OrderPOS() {
         setCart([])
         setNumMesa('')
         setComentario('')
+        setCostoEnvio('')
         setCartOpen(false)
       }
     },
@@ -309,6 +335,7 @@ function OrderPOS() {
         tipoServicio,
         numMesa: numMesa === '' ? undefined : Number(numMesa),
         comentario: comentario || undefined,
+        costoEnvio: esDelivery ? envio : undefined,
         detalles: cart.map((i) => ({ idPlato: i.plato.id, cantidad: i.cantidad })),
       }),
     onSuccess: () => {
@@ -416,10 +443,13 @@ function OrderPOS() {
 
   const panelProps: OrderPanelProps = {
     cart,
+    subtotal,
+    recargoPlatos,
     total,
     tipoServicio,
     numMesa,
     comentario,
+    costoEnvio,
     mode: isEditMode ? 'edit' : 'create',
     isPending: isEditMode ? updateMutation.isPending : mutation.isPending,
     error: isEditMode ? updateMutation.error : mutation.error,
@@ -428,6 +458,7 @@ function OrderPOS() {
     onTipoServicioChange: setTipoServicio,
     onNumMesaChange: setNumMesa,
     onComentarioChange: setComentario,
+    onCostoEnvioChange: setCostoEnvio,
     onClose: closeOrder,
     onSubmit: isEditMode ? handleGuardarPedido : handleCobrar,
   }
@@ -620,10 +651,13 @@ function ShoppingCartTotal({ total, count }: { total: number; count: number }) {
 
 interface OrderPanelProps {
   cart: CartItem[]
+  subtotal: number
+  recargoPlatos: number
   total: number
   tipoServicio: string
   numMesa: string
   comentario: string
+  costoEnvio: string
   inventoryWarning?: string
   mode?: 'create' | 'edit'
   isPending: boolean
@@ -637,15 +671,19 @@ interface OrderPanelProps {
   onTipoServicioChange: (v: string) => void
   onNumMesaChange: (v: string) => void
   onComentarioChange: (v: string) => void
+  onCostoEnvioChange: (v: string) => void
   onSubmit: (e: SyntheticEvent, pagar?: boolean) => void
 }
 
 function OrderPanel({
   cart,
+  subtotal,
+  recargoPlatos,
   total,
   tipoServicio,
   numMesa,
   comentario,
+  costoEnvio,
   inventoryWarning,
   mode = 'create',
   isPending,
@@ -659,6 +697,7 @@ function OrderPanel({
   onTipoServicioChange,
   onNumMesaChange,
   onComentarioChange,
+  onCostoEnvioChange,
   onSubmit,
 }: OrderPanelProps) {
   const hayItems = cart.length > 0
@@ -786,6 +825,20 @@ function OrderPanel({
               />
             </label>
           </div>
+          {tipoServicio === 'DELIVERY' && (
+            <label className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-gray-700">Costo de envío</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={costoEnvio}
+                onChange={(e) => onCostoEnvioChange(e.target.value)}
+                placeholder="0.00"
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+              />
+            </label>
+          )}
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-gray-700">Comentario</span>
             <input
@@ -806,8 +859,20 @@ function OrderPanel({
 
         <div className="mb-1 flex justify-between text-sm text-gray-500">
           <span>Subtotal</span>
-          <span>{formatCurrency(total)}</span>
+          <span>{formatCurrency(subtotal)}</span>
         </div>
+        {tipoServicio === 'DELIVERY' && (
+          <>
+            <div className="mb-1 flex justify-between text-sm text-gray-500">
+              <span>Cargo por plato (domicilio)</span>
+              <span>{formatCurrency(recargoPlatos)}</span>
+            </div>
+            <div className="mb-1 flex justify-between text-sm text-gray-500">
+              <span>Envío</span>
+              <span>{formatCurrency(Number(costoEnvio) || 0)}</span>
+            </div>
+          </>
+        )}
         <div className="mb-1 flex justify-between text-lg font-bold text-gray-900">
           <span>Total</span>
           <span>{formatCurrency(total)}</span>

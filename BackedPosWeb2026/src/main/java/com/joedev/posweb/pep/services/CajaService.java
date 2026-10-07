@@ -2,6 +2,7 @@ package com.joedev.posweb.pep.services;
 
 import com.joedev.posweb.pep.dto.ResumenCierreCaja;
 import com.joedev.posweb.pep.entity.Caja;
+import com.joedev.posweb.pep.entity.InventarioDiario;
 import com.joedev.posweb.pep.exception.ConflictoException;
 import com.joedev.posweb.pep.exception.DatoInvalidoException;
 import com.joedev.posweb.pep.exception.EntidadNoEncontradaException;
@@ -87,11 +88,13 @@ public class CajaService {
         return LocalDate.ofInstant(instante, ZONA_NEGOCIO);
     }
 
-    static void validarPuedeAbrir(boolean cajaAbierta, long inventarioDelDia) {
+    static void validarPuedeAbrir(LocalDate fechaHoy, boolean cajaAbierta, List<InventarioDiario> inventarios) {
         if (cajaAbierta) {
             throw new ConflictoException("Ya existe una caja abierta. Debe cerrarla antes de abrir una nueva");
         }
-        if (inventarioDelDia == 0) {
+        boolean tieneInventarioDelDia = inventarios.stream()
+                .anyMatch(inventario -> fechaHoy.equals(inventario.getFecha()));
+        if (!tieneInventarioDelDia) {
             throw new ConflictoException("Debe registrar el inventario del día antes de abrir la caja");
         }
     }
@@ -103,8 +106,8 @@ public class CajaService {
         }
         LocalDate fechaHoy = fechaNegocio(Instant.now());
         boolean cajaAbierta = repository.findAbierta().isPresent();
-        long inventarioDelDia = inventarioRepository.count("fecha", fechaHoy);
-        validarPuedeAbrir(cajaAbierta, inventarioDelDia);
+        List<InventarioDiario> inventarios = inventarioRepository.findByFecha(fechaHoy);
+        validarPuedeAbrir(fechaHoy, cajaAbierta, inventarios);
 
         Caja caja = new Caja();
         caja.setFechaApertura(Instant.now());

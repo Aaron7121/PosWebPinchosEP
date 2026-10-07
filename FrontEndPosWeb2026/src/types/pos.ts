@@ -94,6 +94,7 @@ export interface PedidoRequest {
   numMesa?: number
   comentario?: string
   idempotencyKey?: string
+  costoEnvio?: number
   detalles: DetalleRequest[]
 }
 
