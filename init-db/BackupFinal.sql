@@ -5,7 +5,7 @@
 -- Dumped from database version 17.11
 -- Dumped by pg_dump version 17.5
 
--- Started on 2026-10-06 23:39:07
+-- Started on 2026-10-07 00:15:35
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -767,6 +767,7 @@ COPY public.caja (id, fecha_apertura, fecha_cierre, id_empleado, observaciones, 
 27	2025-10-03 18:09:56.363696	2025-10-03 22:14:01.709595	1	Apertura de caja - 2025-10-03T18:09:56.355806300\n--- RESUMEN DEL TURNO ---\n• Monto inicial: $61.00\n• Total ventas: $117.60\n• Monto esperado: $178.60\n• Monto real contado: $178.60\n• Diferencia: $0.00	178.60	178.60
 28	2025-10-05 12:33:04.862647	2025-10-05 12:41:34.200014	1	Apertura de caja - 2025-10-05T12:33:04.852297300\n--- RESUMEN DEL TURNO ---\n• Monto inicial: $60.00\n• Total ventas: $0\n• Monto esperado: $60.00\n• Monto real contado: $60\n• Diferencia: $0.00	60.00	60.00
 291	2026-09-22 14:49:11.134775	2026-10-07 00:50:07.821774	2	\N	50.00	50.00
+292	2026-10-07 05:01:41.540383	2026-10-07 05:02:58.191514	2	\N	50.00	50.00
 29	2025-10-05 12:50:18.308325	2025-10-05 17:03:05.351136	1	Apertura de caja - 2025-10-05T12:50:18.299927300\n--- RESUMEN DEL TURNO ---\n• Monto inicial: $61.00\n• Total ventas: $93.05\n• Monto esperado: $154.05\n• Monto real contado: $154.05\n• Diferencia: $0.00	154.05	154.05
 30	2025-10-16 12:15:06.710594	2025-10-16 16:50:32.677895	1	Apertura de caja - 2025-10-16T12:15:06.703416600\n--- RESUMEN DEL TURNO ---\n• Monto inicial: $61.00\n• Total ventas: $115.75\n• Monto esperado: $176.75\n• Monto real contado: $176.75\n• Diferencia: $0.00	176.75	176.75
 31	2025-10-16 17:00:43.35922	2025-10-16 23:45:55.807178	1	Apertura de caja - 2025-10-16T17:00:43.355514700\n--- RESUMEN DEL TURNO ---\n• Monto inicial: $61.00\n• Total ventas: $212.15\n• Monto esperado: $273.15\n• Monto real contado: $273.15\n• Diferencia: $0.00	273.15	273.15
@@ -1100,6 +1101,7 @@ COPY public.detalle_pedido (id_detalle, id_pedido, id_plato, cantidad, subtotal,
 81	3926	95	1	2.00	2.00	\N
 82	3927	37	2	9.80	4.90	\N
 83	3927	33	1	4.75	4.75	\N
+84	3928	62	1	1.25	1.25	\N
 \.
 
 
@@ -1381,6 +1383,52 @@ COPY public.inventario_diario (id_inventario, fecha, id_producto, cantidad_inici
 276	2026-10-06	58	10.00	10.00
 277	2026-10-06	38	14.00	14.00
 232	2026-10-06	11	22.00	22.00
+278	2026-10-07	11	22.00	22.00
+279	2026-10-07	8	10.00	10.00
+280	2026-10-07	9	10.00	10.00
+281	2026-10-07	10	10.00	10.00
+282	2026-10-07	12	10.00	10.00
+283	2026-10-07	13	10.00	10.00
+284	2026-10-07	14	10.00	10.00
+285	2026-10-07	15	10.00	10.00
+286	2026-10-07	16	10.00	10.00
+287	2026-10-07	18	4.00	4.00
+288	2026-10-07	19	10.00	10.00
+289	2026-10-07	20	10.00	10.00
+290	2026-10-07	21	10.00	10.00
+291	2026-10-07	41	10.00	10.00
+293	2026-10-07	17	10.00	10.00
+294	2026-10-07	26	8.00	8.00
+295	2026-10-07	25	10.00	10.00
+296	2026-10-07	35	10.00	10.00
+297	2026-10-07	23	3.00	3.00
+298	2026-10-07	22	10.00	10.00
+299	2026-10-07	3	10.00	10.00
+300	2026-10-07	2	10.00	10.00
+301	2026-10-07	4	10.00	10.00
+302	2026-10-07	5	10.00	10.00
+303	2026-10-07	6	10.00	10.00
+304	2026-10-07	7	9.00	9.00
+305	2026-10-07	1	10.00	10.00
+306	2026-10-07	40	10.00	10.00
+307	2026-10-07	34	3.00	3.00
+308	2026-10-07	24	9.00	9.00
+309	2026-10-07	27	10.00	10.00
+310	2026-10-07	28	0.00	0.00
+311	2026-10-07	30	10.00	10.00
+312	2026-10-07	33	8.00	8.00
+313	2026-10-07	45	9.00	9.00
+314	2026-10-07	46	9.00	9.00
+315	2026-10-07	48	10.00	10.00
+316	2026-10-07	49	9.00	9.00
+317	2026-10-07	52	9.00	9.00
+318	2026-10-07	54	10.00	10.00
+319	2026-10-07	55	10.00	10.00
+320	2026-10-07	56	10.00	10.00
+321	2026-10-07	57	10.00	10.00
+322	2026-10-07	58	10.00	10.00
+323	2026-10-07	38	14.00	14.00
+292	2026-10-07	42	10.00	10.00
 \.
 
 
@@ -1558,6 +1606,53 @@ COPY public.mov_inventario (id_mov, id_producto, fecha, tipo_movimiento, cantida
 393	58	2026-10-07 00:50:11.68415	ENTRADA	10.00	\N
 394	38	2026-10-07 00:50:11.689358	ENTRADA	14.00	\N
 395	11	2026-10-07 00:53:10.757711	ENTRADA	12.00	\N
+396	11	2026-10-07 05:01:36.588327	ENTRADA	22.00	\N
+397	8	2026-10-07 05:01:36.625198	ENTRADA	10.00	\N
+398	9	2026-10-07 05:01:36.63953	ENTRADA	10.00	\N
+399	10	2026-10-07 05:01:36.653141	ENTRADA	10.00	\N
+400	12	2026-10-07 05:01:36.663919	ENTRADA	10.00	\N
+401	13	2026-10-07 05:01:36.673768	ENTRADA	10.00	\N
+402	14	2026-10-07 05:01:36.683334	ENTRADA	10.00	\N
+403	15	2026-10-07 05:01:36.691783	ENTRADA	10.00	\N
+404	16	2026-10-07 05:01:36.700078	ENTRADA	10.00	\N
+405	18	2026-10-07 05:01:36.712576	ENTRADA	4.00	\N
+406	19	2026-10-07 05:01:36.723218	ENTRADA	10.00	\N
+407	20	2026-10-07 05:01:36.731656	ENTRADA	10.00	\N
+408	21	2026-10-07 05:01:36.739071	ENTRADA	10.00	\N
+409	41	2026-10-07 05:01:36.744797	ENTRADA	10.00	\N
+410	42	2026-10-07 05:01:36.75164	ENTRADA	10.00	\N
+411	17	2026-10-07 05:01:36.757202	ENTRADA	10.00	\N
+412	26	2026-10-07 05:01:36.764848	ENTRADA	8.00	\N
+413	25	2026-10-07 05:01:36.770895	ENTRADA	10.00	\N
+414	35	2026-10-07 05:01:36.777559	ENTRADA	10.00	\N
+415	23	2026-10-07 05:01:36.783627	ENTRADA	3.00	\N
+416	22	2026-10-07 05:01:36.78848	ENTRADA	10.00	\N
+417	3	2026-10-07 05:01:36.793345	ENTRADA	10.00	\N
+418	2	2026-10-07 05:01:36.798656	ENTRADA	10.00	\N
+419	4	2026-10-07 05:01:36.803879	ENTRADA	10.00	\N
+420	5	2026-10-07 05:01:36.810181	ENTRADA	10.00	\N
+421	6	2026-10-07 05:01:36.815521	ENTRADA	10.00	\N
+422	7	2026-10-07 05:01:36.820246	ENTRADA	9.00	\N
+423	1	2026-10-07 05:01:36.825352	ENTRADA	10.00	\N
+424	40	2026-10-07 05:01:36.83057	ENTRADA	10.00	\N
+425	34	2026-10-07 05:01:36.836029	ENTRADA	3.00	\N
+426	24	2026-10-07 05:01:36.840921	ENTRADA	9.00	\N
+427	27	2026-10-07 05:01:36.846708	ENTRADA	10.00	\N
+428	30	2026-10-07 05:01:36.856014	ENTRADA	10.00	\N
+429	33	2026-10-07 05:01:36.86071	ENTRADA	8.00	\N
+430	45	2026-10-07 05:01:36.865214	ENTRADA	9.00	\N
+431	46	2026-10-07 05:01:36.872247	ENTRADA	9.00	\N
+432	48	2026-10-07 05:01:36.878385	ENTRADA	10.00	\N
+433	49	2026-10-07 05:01:36.88405	ENTRADA	9.00	\N
+434	52	2026-10-07 05:01:36.891174	ENTRADA	9.00	\N
+435	54	2026-10-07 05:01:36.897994	ENTRADA	10.00	\N
+436	55	2026-10-07 05:01:36.903346	ENTRADA	10.00	\N
+437	56	2026-10-07 05:01:36.908291	ENTRADA	10.00	\N
+438	57	2026-10-07 05:01:36.913819	ENTRADA	10.00	\N
+439	58	2026-10-07 05:01:36.919881	ENTRADA	10.00	\N
+440	38	2026-10-07 05:01:36.925308	ENTRADA	14.00	\N
+441	42	2026-10-07 05:02:07.205011	SALIDA	1.00	3928
+442	42	2026-10-07 05:02:16.583488	DEVOLUCION	1.00	3928
 \.
 
 
@@ -4948,6 +5043,7 @@ COPY public.pedido (id_pedido, fecha, id_cliente, id_empleado, total, tipo_servi
 3927	2026-09-22 16:48:48.976935+00	\N	2	14.55	MESA	\N	\N	COMPLETADO	PAGADO
 3923	2026-09-22 14:59:22.984104+00	\N	2	2.60	MESA	\N	\N	COMPLETADO	PAGADO
 3922	2026-09-22 14:50:44.530104+00	\N	2	16.70	DELIVERY	1	\N	COMPLETADO	PAGADO
+3928	2026-10-07 05:02:07.194558+00	\N	2	1.25	MESA	\N	\N	CANCELADO	PENDIENTE
 \.
 
 
@@ -5054,8 +5150,9 @@ COPY public.plato (id_plato, nombre, descripcion, precio, img, id_categoria, act
 81	Chuleta Papas	Con papas	3.90	\N	3	t
 93	Frutos Tropicales	aromatica	0.75	\N	11	t
 10	Inca. G	Grande	1.75	\N	13	t
-36	Completo Paisa	Choclo+Paisa	4.75	\N	3	t
 2	CocaCola. P	Pequeño	0.50	\N	5	t
+99	Completo Paisa	\N	4.85	\N	3	t
+36	Completo Paisa	Choclo+Paisa	4.75	\N	3	f
 \.
 
 
@@ -5120,10 +5217,11 @@ COPY public.producto (id_producto, nombre, unidad_medida, es_contable, stock_min
 55	Horchata	unidad	t	2.00	t
 56	LLEVAR	UNIDAD	t	1.00	t
 57	Pepsi	1	t	1.00	t
-58	agua cielo	unidad	t	1.00	t
 51	Arroz	Normal	t	0.00	f
 38	Menestra	Porción	t	1.00	t
 53	Anis Común	unidad	t	2.00	f
+58	agua cielo	unidad	t	1.00	f
+100	agua cielo	\N	t	5.00	t
 \.
 
 
@@ -5401,7 +5499,7 @@ COPY public.usuario (id_empleado, nombre, cedula, telefono, correo, cargo, id_di
 -- Name: caja_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.caja_id_seq', 291, true);
+SELECT pg_catalog.setval('public.caja_id_seq', 292, true);
 
 
 --
@@ -5437,7 +5535,7 @@ SELECT pg_catalog.setval('public.detalle_pago_id_pago_seq', 5, true);
 -- Name: detalle_pedido_id_detalle_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.detalle_pedido_id_detalle_seq', 83, true);
+SELECT pg_catalog.setval('public.detalle_pedido_id_detalle_seq', 84, true);
 
 
 --
@@ -5464,7 +5562,7 @@ SELECT pg_catalog.setval('public.empleado_id_empleado_seq', 7, true);
 -- Name: inventario_diario_id_inventario_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.inventario_diario_id_inventario_seq', 277, true);
+SELECT pg_catalog.setval('public.inventario_diario_id_inventario_seq', 323, true);
 
 
 --
@@ -5473,7 +5571,7 @@ SELECT pg_catalog.setval('public.inventario_diario_id_inventario_seq', 277, true
 -- Name: mov_inventario_id_mov_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.mov_inventario_id_mov_seq', 395, true);
+SELECT pg_catalog.setval('public.mov_inventario_id_mov_seq', 442, true);
 
 
 --
@@ -5482,7 +5580,7 @@ SELECT pg_catalog.setval('public.mov_inventario_id_mov_seq', 395, true);
 -- Name: pedido_id_pedido_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.pedido_id_pedido_seq', 3927, true);
+SELECT pg_catalog.setval('public.pedido_id_pedido_seq', 3928, true);
 
 
 --
@@ -5491,7 +5589,7 @@ SELECT pg_catalog.setval('public.pedido_id_pedido_seq', 3927, true);
 -- Name: plato_id_plato_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.plato_id_plato_seq', 2, true);
+SELECT pg_catalog.setval('public.plato_id_plato_seq', 99, true);
 
 
 --
@@ -5500,7 +5598,7 @@ SELECT pg_catalog.setval('public.plato_id_plato_seq', 2, true);
 -- Name: producto_id_producto_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.producto_id_producto_seq', 1, true);
+SELECT pg_catalog.setval('public.producto_id_producto_seq', 100, true);
 
 
 --
@@ -5825,7 +5923,7 @@ ALTER TABLE ONLY public.receta_plato_producto
     ADD CONSTRAINT "id_producto_FK" FOREIGN KEY (id_producto) REFERENCES public.producto(id_producto);
 
 
--- Completed on 2026-10-06 23:39:07
+-- Completed on 2026-10-07 00:15:35
 
 --
 -- PostgreSQL database dump complete

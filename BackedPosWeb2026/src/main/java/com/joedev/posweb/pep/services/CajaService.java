@@ -83,19 +83,28 @@ public class CajaService {
         return new ResumenCierreCaja(montoInicial, efectivo, transferencia, efectivoEsperado, transferencia, totalEsperado);
     }
 
+    static LocalDate fechaNegocio(Instant instante) {
+        return LocalDate.ofInstant(instante, ZONA_NEGOCIO);
+    }
+
+    static void validarPuedeAbrir(boolean cajaAbierta, long inventarioDelDia) {
+        if (cajaAbierta) {
+            throw new ConflictoException("Ya existe una caja abierta. Debe cerrarla antes de abrir una nueva");
+        }
+        if (inventarioDelDia == 0) {
+            throw new ConflictoException("Debe registrar el inventario del día antes de abrir la caja");
+        }
+    }
+
     @Transactional
     public Caja abrir(BigDecimal montoEsperado, String observaciones) {
         if (montoEsperado == null || montoEsperado.signum() < 0) {
             throw new DatoInvalidoException("El monto esperado es obligatorio y no puede ser negativo");
         }
-        LocalDate fechaHoy = LocalDate.now(ZONA_NEGOCIO);
+        LocalDate fechaHoy = fechaNegocio(Instant.now());
+        boolean cajaAbierta = repository.findAbierta().isPresent();
         long inventarioDelDia = inventarioRepository.count("fecha", fechaHoy);
-        if (inventarioDelDia == 0) {
-            throw new ConflictoException("Debe registrar el inventario del día antes de abrir la caja");
-        }
-        if (repository.findAbierta().isPresent()) {
-            throw new ConflictoException("Ya existe una caja abierta. Debe cerrarla antes de abrir una nueva");
-        }
+        validarPuedeAbrir(cajaAbierta, inventarioDelDia);
 
         Caja caja = new Caja();
         caja.setFechaApertura(Instant.now());
