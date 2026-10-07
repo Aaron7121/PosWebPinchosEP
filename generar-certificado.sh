@@ -15,9 +15,11 @@ if [ -s "$CERT_FILE" ] && [ -s "$KEY_FILE" ] \
     exit 0
 fi
 
+SUBJECT_ALT_NAME="DNS:localhost,IP:127.0.0.1"
 case "$CERT_HOST" in
-    *[!0-9.]* ) SUBJECT_ALT_NAME="DNS:$CERT_HOST" ;;
-    * ) SUBJECT_ALT_NAME="IP:$CERT_HOST" ;;
+    localhost|127.0.0.1 ) ;;
+    *[!0-9.]* ) SUBJECT_ALT_NAME="$SUBJECT_ALT_NAME,DNS:$CERT_HOST" ;;
+    * ) SUBJECT_ALT_NAME="$SUBJECT_ALT_NAME,IP:$CERT_HOST" ;;
 esac
 
 openssl req -x509 -nodes -newkey rsa:2048 \

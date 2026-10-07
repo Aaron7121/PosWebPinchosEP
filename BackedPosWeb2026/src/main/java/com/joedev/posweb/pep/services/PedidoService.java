@@ -370,7 +370,7 @@ public class PedidoService {
             return;
         }
         LocalDate fechaInventario = cajaRepository.findAbierta()
-                .map(caja -> caja.getFechaApertura().atZone(ZoneOffset.UTC).toLocalDate())
+                .map(caja -> caja.getFechaApertura().atZone(java.time.ZoneId.systemDefault()).toLocalDate())
                 .orElseThrow(() -> new ConflictoException("Debe abrir caja antes de registrar pedidos"));
         Optional<InventarioDiario> registro = inventarioRepository.findByFechaAndProductoForUpdate(
                 fechaInventario,

@@ -21,6 +21,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
@@ -29,6 +30,8 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class InventarioDiarioResource {
+
+    private static final ZoneId ZONA_NEGOCIO = ZoneId.of("America/Guayaquil");
 
     @Inject
     InventarioDiarioService service;
@@ -57,7 +60,7 @@ public class InventarioDiarioResource {
     @POST
     @Path("/lote")
     public Response registrarLote(@QueryParam("fecha") String fecha, List<InventarioItemRequest> items) {
-        LocalDate fechaLote = fecha == null || fecha.isBlank() ? LocalDate.now() : parseFecha(fecha);
+        LocalDate fechaLote = fecha == null || fecha.isBlank() ? LocalDate.now(ZONA_NEGOCIO) : parseFecha(fecha);
         List<InventarioDiario> creados = service.registrarLote(fechaLote, items);
         return Response.status(Response.Status.CREATED).entity(creados).build();
     }
@@ -66,7 +69,7 @@ public class InventarioDiarioResource {
     @POST
     @Path("/entrada")
     public Response registrarEntrada(@QueryParam("fecha") String fecha, AjusteInventarioRequest request) {
-        LocalDate fechaLote = fecha == null || fecha.isBlank() ? LocalDate.now() : parseFecha(fecha);
+        LocalDate fechaLote = fecha == null || fecha.isBlank() ? LocalDate.now(ZONA_NEGOCIO) : parseFecha(fecha);
         InventarioDiario actualizado = service.registrarEntrada(fechaLote, request);
         return Response.ok(actualizado).build();
     }
@@ -75,7 +78,7 @@ public class InventarioDiarioResource {
     @POST
     @Path("/entrada/lote")
     public Response registrarEntradaLote(@QueryParam("fecha") String fecha, List<AjusteInventarioRequest> items) {
-        LocalDate fechaLote = fecha == null || fecha.isBlank() ? LocalDate.now() : parseFecha(fecha);
+        LocalDate fechaLote = fecha == null || fecha.isBlank() ? LocalDate.now(ZONA_NEGOCIO) : parseFecha(fecha);
         List<InventarioDiario> actualizados = service.registrarEntradaLote(fechaLote, items);
         return Response.ok(actualizados).build();
     }
@@ -84,7 +87,7 @@ public class InventarioDiarioResource {
     @POST
     @Path("/salida")
     public Response registrarSalida(@QueryParam("fecha") String fecha, AjusteInventarioRequest request) {
-        LocalDate fechaLote = fecha == null || fecha.isBlank() ? LocalDate.now() : parseFecha(fecha);
+        LocalDate fechaLote = fecha == null || fecha.isBlank() ? LocalDate.now(ZONA_NEGOCIO) : parseFecha(fecha);
         InventarioDiario actualizado = service.registrarSalida(fechaLote, request);
         return Response.ok(actualizado).build();
     }
@@ -93,7 +96,7 @@ public class InventarioDiarioResource {
     @POST
     @Path("/salida/lote")
     public Response registrarSalidaLote(@QueryParam("fecha") String fecha, List<AjusteInventarioRequest> items) {
-        LocalDate fechaLote = fecha == null || fecha.isBlank() ? LocalDate.now() : parseFecha(fecha);
+        LocalDate fechaLote = fecha == null || fecha.isBlank() ? LocalDate.now(ZONA_NEGOCIO) : parseFecha(fecha);
         List<InventarioDiario> actualizados = service.registrarSalidaLote(fechaLote, items);
         return Response.ok(actualizados).build();
     }

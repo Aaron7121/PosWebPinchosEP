@@ -25,6 +25,8 @@ import java.util.Map;
 @ApplicationScoped
 public class CajaService {
 
+    private static final ZoneId ZONA_NEGOCIO = ZoneId.of("America/Guayaquil");
+
     @Inject
     CajaRepository repository;
 
@@ -86,7 +88,8 @@ public class CajaService {
         if (montoEsperado == null || montoEsperado.signum() < 0) {
             throw new DatoInvalidoException("El monto esperado es obligatorio y no puede ser negativo");
         }
-        long inventarioDelDia = inventarioRepository.count("fecha", LocalDate.now());
+        LocalDate fechaHoy = LocalDate.now(ZONA_NEGOCIO);
+        long inventarioDelDia = inventarioRepository.count("fecha", fechaHoy);
         if (inventarioDelDia == 0) {
             throw new ConflictoException("Debe registrar el inventario del día antes de abrir la caja");
         }
