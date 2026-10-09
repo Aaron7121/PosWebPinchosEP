@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { BarChart3, Boxes, ClipboardList, Download, LogOut, ReceiptText, Settings, X } from 'lucide-react'
+import { BarChart3, Boxes, ChefHat, ClipboardList, Download, LogOut, ReceiptText, Settings, X } from 'lucide-react'
 import { useAuthStore } from '../../store/auth'
 import { useInstallPrompt } from '../../hooks/useInstallPrompt'
 import { SoundToggle } from '../ui/SoundToggle'
@@ -9,6 +9,7 @@ import logoNegocio from '../../api/assets/logoNegocio.png'
 const navItems = [
   { to: '/', label: 'Nuevo pedido', icon: ReceiptText },
   { to: '/pedidos', label: 'Pedidos', icon: ClipboardList },
+  { to: '/cocina', label: 'Pantallas de cocina', icon: ChefHat },
   { to: '/configuracion', label: 'Configuración', icon: Settings },
   { to: '/inventario', label: 'Inventario y caja', icon: Boxes },
   { to: '/estadisticas', label: 'Estadísticas', icon: BarChart3 },

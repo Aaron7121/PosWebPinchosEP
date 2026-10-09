@@ -15,6 +15,8 @@ import { PlatoFormPage } from './pages/config/PlatoFormPage'
 import { ProductosPage } from './pages/config/ProductosPage'
 import { CategoriasPage } from './pages/config/CategoriasPage'
 import { ClientesPage } from './pages/config/ClientesPage'
+import { CocinaPage } from './pages/cocina/CocinaPage'
+import { TableroCocina } from './pages/cocina/TableroCocina'
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
 
       <Route element={<ProtectedRoute />}>
+        <Route path="/cocina" element={<CocinaPage />} />
+        <Route path="/cocina/:perfilId" element={<TableroCocina />} />
         <Route element={<AppLayout />}>
           <Route path="/" element={<NewOrderPage />} />
           <Route path="/pedidos" element={<PedidosPage />} />

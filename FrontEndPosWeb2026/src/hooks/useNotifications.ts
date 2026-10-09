@@ -16,7 +16,7 @@ const DOMAIN_KEYS: unknown[][] = [
   ['cajas'],
 ]
 
-export function useNotifications() {
+export function useNotifications({ avisos = true }: { avisos?: boolean } = {}) {
   const queryClient = useQueryClient()
   const token = useAuthStore((s) => s.token)
 
@@ -112,7 +112,7 @@ export function useNotifications() {
             data?: { id?: number; total?: number }
           }
           invalidar(type)
-          notificarEvento(type, data)
+          if (avisos) notificarEvento(type, data)
         } catch {
           // Ignorar mensajes malformados
         }
@@ -135,5 +135,5 @@ export function useNotifications() {
       if (reconnectTimer) clearTimeout(reconnectTimer)
       source?.close()
     }
-  }, [queryClient, token])
+  }, [queryClient, token, avisos])
 }
