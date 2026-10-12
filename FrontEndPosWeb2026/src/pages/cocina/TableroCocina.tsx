@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Volume2, VolumeX } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, Check, Volume2, VolumeX } from 'lucide-react'
+import { cambiarEstadoPedido } from '../../api/pedidos'
+import { usePedidosUI } from '../../store/pedidosUI'
+import { formatCurrency } from '../../utils/format'
 import { useCocinaPerfiles } from '../../store/cocinaPerfiles'
 import type { TamanoCocina } from '../../store/cocinaPerfiles'
 import { useNotificationsStore } from '../../store/notifications'
@@ -29,6 +33,12 @@ export function TableroCocina() {
   const silenciado = useNotificationsStore((s) => s.silenciado)
   const toggleSilenciado = useNotificationsStore((s) => s.toggleSilenciado)
   const [ahora, setAhora] = useState(() => Date.now())
+  const queryClient = useQueryClient()
+  const colapsar = usePedidosUI((s) => s.colapsar)
+  const listoMutation = useMutation({
+    mutationFn: (id: number) => cambiarEstadoPedido(id, 'ENTREGADO'),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pedidos'] }),
+  })
 
   useNotifications({ avisos: false })
   const { tarjetas, isLoading, isError } = usePedidosCocina(perfil)
@@ -112,20 +122,23 @@ export function TableroCocina() {
                     minute: '2-digit',
                   })
                 : ''
+              const itemsMesa = items.filter((d) => !d.paraLlevar)
+              const itemsLlevar = items.filter((d) => Boolean(d.paraLlevar))
+
               return (
                 <article
                   key={pedido.id}
                   className={`rounded-2xl border-2 p-4 ${colorEspera(min)}`}
                 >
                   <div className="mb-3 flex items-baseline justify-between gap-2 border-b border-white/10 pb-2">
-                    <span className="text-2xl font-extrabold">
-                      #{pedido.id}
+                    <span className="text-2xl font-extrabold flex items-center flex-wrap gap-2">
+                      <span>#{pedido.id}</span>
                       {perfil.mostrarMesa && pedido.numMesa != null && (
-                        <span className="ml-2 text-amber-300">Mesa {pedido.numMesa}</span>
+                        <span className="text-amber-300">Mesa {pedido.numMesa}</span>
                       )}
                     </span>
                     {perfil.mostrarHora && (
-                      <span className="text-sm text-gray-300">
+                      <span className="text-sm text-gray-300 shrink-0">
                         {hora} · {min} min
                       </span>
                     )}
@@ -135,30 +148,84 @@ export function TableroCocina() {
                       {pedido.tipoServicio}
                     </p>
                   )}
-                  <ul className="space-y-2">
-                    {items.map((d) => {
-                      const hecho = !!hechos[`${pedido.id}:${d.id}`]
-                      return (
-                        <li key={d.id}>
-                          <button
-                            type="button"
-                            onClick={() => marcarHecho(`${pedido.id}:${d.id}`)}
-                            className={`flex w-full items-baseline gap-3 rounded-lg px-2 py-1 text-left font-bold ${texto} ${
-                              hecho ? 'text-gray-600 line-through' : 'hover:bg-white/5'
-                            }`}
-                          >
-                            <span className="text-amber-300">{d.cantidad ?? 1}×</span>
-                            <span>{d.idPlato?.nombre}</span>
-                          </button>
-                        </li>
-                      )
-                    })}
-                  </ul>
+
+                  <div className="space-y-2">
+                    {itemsMesa.length > 0 && (
+                      <ul className="space-y-1.5">
+                        {itemsMesa.map((d) => {
+                          const hecho = !!hechos[`${pedido.id}:${d.id}`]
+                          return (
+                            <li key={d.id}>
+                              <button
+                                type="button"
+                                onClick={() => marcarHecho(`${pedido.id}:${d.id}`)}
+                                className={`flex w-full items-baseline gap-3 rounded-lg px-2 py-1 text-left font-bold ${texto} ${
+                                  hecho ? 'text-gray-600 line-through' : 'hover:bg-white/5 text-white'
+                                }`}
+                              >
+                                <span className="text-amber-300">{d.cantidad ?? 1}×</span>
+                                <span>{d.idPlato?.nombre}</span>
+                              </button>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+
+                    {itemsMesa.length > 0 && itemsLlevar.length > 0 && (
+                      <div className="relative my-2.5 flex items-center">
+                        <div className="flex-grow border-t border-white/20" />
+                        <span className="mx-2 shrink-0 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                          Para llevar
+                        </span>
+                        <div className="flex-grow border-t border-white/20" />
+                      </div>
+                    )}
+
+                    {itemsLlevar.length > 0 && (
+                      <ul className="space-y-1.5">
+                        {itemsLlevar.map((d) => {
+                          const hecho = !!hechos[`${pedido.id}:${d.id}`]
+                          return (
+                            <li key={d.id}>
+                              <button
+                                type="button"
+                                onClick={() => marcarHecho(`${pedido.id}:${d.id}`)}
+                                className={`flex w-full items-baseline gap-3 rounded-lg px-2 py-1 text-left font-bold ${texto} ${
+                                  hecho ? 'text-gray-600 line-through' : 'hover:bg-white/5 text-white'
+                                }`}
+                              >
+                                <span className="text-amber-300">{d.cantidad ?? 1}×</span>
+                                <span>{d.idPlato?.nombre}</span>
+                              </button>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                  </div>
                   {perfil.mostrarComentario && pedido.comentario && (
                     <p className="mt-3 rounded-lg bg-yellow-400/15 px-3 py-2 text-lg font-semibold text-yellow-200">
                       {pedido.comentario}
                     </p>
                   )}
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+                    <span className="text-2xl font-extrabold text-emerald-300">
+                      Total {formatCurrency(pedido.total ?? 0)}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={listoMutation.isPending}
+                      onClick={() => {
+                        colapsar(pedido.id)
+                        listoMutation.mutate(pedido.id)
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-lg font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+                    >
+                      <Check size={20} />
+                      Pedido listo
+                    </button>
+                  </div>
                 </article>
               )
             })}

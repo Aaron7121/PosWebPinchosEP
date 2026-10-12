@@ -11,6 +11,7 @@ export interface Plato {
   nombre: string
   descripcion: string | null
   precio: number | null
+  precioLlevar?: number | null
   img: string | null
   idCategoria: CategoriaPlato | null
 }
@@ -42,6 +43,7 @@ export interface PlatoRequest {
   nombre?: string
   descripcion?: string
   precio?: number
+  precioLlevar?: number | null
   img?: string
   idCategoria?: { id: number } | null
 }

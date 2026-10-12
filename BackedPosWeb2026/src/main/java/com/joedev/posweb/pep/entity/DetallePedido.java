@@ -3,6 +3,7 @@ package com.joedev.posweb.pep.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 
@@ -36,5 +37,9 @@ public class DetallePedido {
 
     @Column(name = "tipo_pago", length = 20)
     private String tipoPago;
+
+    @ColumnDefault("false")
+    @Column(name = "para_llevar")
+    private Boolean paraLlevar = Boolean.FALSE;
 
 }

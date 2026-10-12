@@ -6,15 +6,26 @@ interface ModalProps {
   title: string
   onClose: () => void
   children: ReactNode
+  maxWidth?: string
+  className?: string
 }
 
-export function Modal({ open, title, onClose, children }: ModalProps) {
+export function Modal({
+  open,
+  title,
+  onClose,
+  children,
+  maxWidth = 'max-w-sm',
+  className = '',
+}: ModalProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-sm rounded-3xl border border-gray-100 bg-white p-6 shadow-lg">
-        <div className="mb-4 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-4">
+      <div
+        className={`w-full ${maxWidth} max-h-[92vh] overflow-y-auto rounded-3xl border border-gray-100 bg-white p-5 sm:p-6 shadow-xl transition-all ${className}`}
+      >
+        <div className="sticky top-0 z-10 mb-4 flex items-center justify-between bg-white pb-1">
           <h3 className="text-lg font-bold text-gray-900">{title}</h3>
           <button
             type="button"

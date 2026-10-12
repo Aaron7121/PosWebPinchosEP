@@ -1,6 +1,6 @@
 import { Howl, Howler } from 'howler'
 
-export type SoundKind = 'nuevo' | 'listo' | 'cobrado'
+export type SoundKind = 'nuevo' | 'listo' | 'cobrado' | 'agregar'
 
 /* ================================================================== *
  * 1. CONFIGURACIÓN — aquí cambias archivo, volumen y vibración
@@ -40,6 +40,21 @@ interface SonidoConfig {
 }
 
 const SONIDOS: Record<SoundKind, SonidoConfig> = {
+  agregar: {
+    archivo: 'agregar.mp3',
+    volumen: 0.5,
+    vibrar: 20,
+    respaldo: {
+      onda: 'sine',
+      notas: [
+        { freq: 740, atraso: 0, dur: 0.07 },
+        { freq: 988, atraso: 0.05, dur: 0.1 },
+      ],
+      ganancia: 0.35,
+      repeticiones: 1,
+      intervaloRepeticion: 0.2,
+    },
+  },
   nuevo: {
     archivo: 'nuevo.mp3',
     volumen: 0.8,

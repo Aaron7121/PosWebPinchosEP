@@ -78,6 +78,10 @@ public class PlatoService {
         if (precio.signum() < 0) {
             throw new DatoInvalidoException("El precio del plato no puede ser negativo");
         }
+        BigDecimal precioLlevar = plato.getPrecioLlevar();
+        if (precioLlevar != null && precioLlevar.signum() < 0) {
+            throw new DatoInvalidoException("El precio para llevar no puede ser negativo");
+        }
     }
 
     public Plato cambiarEstado(Integer id, Boolean activo) {

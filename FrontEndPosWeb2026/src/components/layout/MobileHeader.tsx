@@ -8,7 +8,7 @@ interface MobileHeaderProps {
 
 export function MobileHeader({ onMenuClick }: MobileHeaderProps) {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-100 bg-white px-4 lg:hidden">
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-100 bg-white px-4 md:hidden">
       <button
         type="button"
         onClick={onMenuClick}

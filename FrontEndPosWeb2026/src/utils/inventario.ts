@@ -4,6 +4,7 @@ import type { InventarioDiario } from '../types/pos'
 export interface CartItem {
   plato: Plato
   cantidad: number
+  paraLlevar?: boolean
 }
 
 export interface InventoryIssue {

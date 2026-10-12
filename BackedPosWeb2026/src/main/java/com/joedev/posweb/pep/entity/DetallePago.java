@@ -28,7 +28,7 @@ public class DetallePago {
     @Column(name = "total", precision = 10, scale = 2)
     private BigDecimal total;
 
-    @Column(name = "fecha")
+    @Column(name = "fecha", columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime fecha;
 
 }

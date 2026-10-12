@@ -30,7 +30,6 @@ import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -43,7 +42,6 @@ public class PedidoService {
 
     public static final Set<String> ESTADOS_PEDIDO = Set.of("PENDIENTE", "ENTREGADO", "COMPLETADO", "CANCELADO");
     public static final Set<String> ESTADOS_PAGO = Set.of("PENDIENTE", "PAGADO");
-    private static final BigDecimal RECARGO_DOMICILIO_POR_PLATO = new BigDecimal("0.10");
 
     @Inject
     PedidoRepository repository;
@@ -174,12 +172,20 @@ public class PedidoService {
                 throw new DatoInvalidoException("El plato " + plato.getNombre() + " no tiene precio definido");
             }
 
+            boolean esParaLlevar = "DELIVERY".equals(pedido.getTipoServicio())
+                    || "LLEVAR".equals(pedido.getTipoServicio())
+                    || Boolean.TRUE.equals(detalleRequest.paraLlevar());
+            BigDecimal precioUnitario = (esParaLlevar && plato.getPrecioLlevar() != null)
+                    ? plato.getPrecioLlevar()
+                    : plato.getPrecio();
+
             DetallePedido detalle = new DetallePedido();
             detalle.setIdPedido(pedido);
             detalle.setIdPlato(plato);
             detalle.setCantidad(detalleRequest.cantidad());
-            detalle.setPrecioUnitario(plato.getPrecio());
-            detalle.setSubtotal(plato.getPrecio()
+            detalle.setParaLlevar(esParaLlevar);
+            detalle.setPrecioUnitario(precioUnitario);
+            detalle.setSubtotal(precioUnitario
                     .multiply(BigDecimal.valueOf(detalleRequest.cantidad()))
                     .setScale(2, RoundingMode.HALF_UP));
             detalleRepository.persist(detalle);
@@ -248,12 +254,20 @@ public class PedidoService {
                 throw new DatoInvalidoException("El plato " + plato.getNombre() + " no tiene precio definido");
             }
 
+            boolean esParaLlevar = "DELIVERY".equals(pedido.getTipoServicio())
+                    || "LLEVAR".equals(pedido.getTipoServicio())
+                    || Boolean.TRUE.equals(detalleRequest.paraLlevar());
+            BigDecimal precioUnitario = (esParaLlevar && plato.getPrecioLlevar() != null)
+                    ? plato.getPrecioLlevar()
+                    : plato.getPrecio();
+
             DetallePedido detalle = new DetallePedido();
             detalle.setIdPedido(pedido);
             detalle.setIdPlato(plato);
             detalle.setCantidad(detalleRequest.cantidad());
-            detalle.setPrecioUnitario(plato.getPrecio());
-            detalle.setSubtotal(plato.getPrecio()
+            detalle.setParaLlevar(esParaLlevar);
+            detalle.setPrecioUnitario(precioUnitario);
+            detalle.setSubtotal(precioUnitario
                     .multiply(BigDecimal.valueOf(detalleRequest.cantidad()))
                     .setScale(2, RoundingMode.HALF_UP));
             detalleRepository.persist(detalle);
@@ -278,18 +292,7 @@ public class PedidoService {
         if (envio.signum() < 0) {
             throw new DatoInvalidoException("El costo de envío no puede ser negativo");
         }
-        int unidades = request.detalles().stream()
-                .filter(d -> !esBebida(d.idPlato()))
-                .mapToInt(DetalleRequest::cantidad)
-                .sum();
-        return RECARGO_DOMICILIO_POR_PLATO.multiply(BigDecimal.valueOf(unidades)).add(envio);
-    }
-
-    private boolean esBebida(Integer idPlato) {
-        return platoRepository.findByIdOptional(idPlato)
-                .map(Plato::getIdCategoria)
-                .map(c -> "Bebidas".equalsIgnoreCase(c.getNombre()))
-                .orElse(false);
+        return envio;
     }
 
     @Transactional
@@ -394,14 +397,9 @@ public class PedidoService {
         if (Boolean.FALSE.equals(producto.getEsContable())) {
             return;
         }
-        LocalDate fechaInventario = cajaRepository.findAbierta()
-                .map(caja -> caja.getFechaApertura().atZone(java.time.ZoneId.systemDefault()).toLocalDate())
-                .orElseThrow(() -> new ConflictoException("Debe abrir caja antes de registrar pedidos"));
-        Optional<InventarioDiario> registro = inventarioRepository.findByFechaAndProductoForUpdate(
-                fechaInventario,
-                producto.getId());
+        Optional<InventarioDiario> registro = inventarioRepository.findUltimoPorProductoForUpdate(producto.getId());
         if (registro.isEmpty()) {
-            throw new ConflictoException("No hay inventario registrado para la fecha de caja del producto " + producto.getNombre() + ". Registra el inventario antes de continuar");
+            throw new ConflictoException("No hay inventario registrado para el producto " + producto.getNombre() + ". Registra su inventario antes de continuar");
         }
         InventarioDiario inventario = registro.get();
         BigDecimal nuevo = "SALIDA".equals(tipo)

@@ -38,6 +38,7 @@ export interface DetallePedido {
   subtotal: number | null
   precioUnitario: number | null
   tipoPago: string | null
+  paraLlevar?: boolean | null
 }
 
 export interface DetallePago {
@@ -86,6 +87,7 @@ export interface ResumenCierreCaja {
 export interface DetalleRequest {
   idPlato: number
   cantidad: number
+  paraLlevar?: boolean
 }
 
 export interface PedidoRequest {

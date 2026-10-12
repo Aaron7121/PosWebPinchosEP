@@ -123,6 +123,9 @@ function PlatoForm({
   const [precio, setPrecio] = useState(
     initial?.precio != null ? String(initial.precio) : '',
   )
+  const [precioLlevar, setPrecioLlevar] = useState(
+    initial?.precioLlevar != null ? String(initial.precioLlevar) : '',
+  )
   const [img, setImg] = useState(initial?.img ?? '')
   const [idCategoria, setIdCategoria] = useState<number | ''>(
     initial?.idCategoria?.id ?? '',
@@ -131,6 +134,7 @@ function PlatoForm({
   const [fieldErrors, setFieldErrors] = useState<{
     nombre?: string
     precio?: string
+    precioLlevar?: string
     recetas?: string
   }>({})
   const [recetas, setRecetas] = useState<RecetaRow[]>(() =>
@@ -168,6 +172,12 @@ function PlatoForm({
     if (!Number.isFinite(numericPrice) || numericPrice < 0) {
       errors.precio = 'Ingresa un precio válido mayor o igual a cero'
     }
+    if (precioLlevar !== '') {
+      const numericLlevar = Number(precioLlevar)
+      if (!Number.isFinite(numericLlevar) || numericLlevar < 0) {
+        errors.precioLlevar = 'Ingresa un precio para llevar válido mayor o igual a cero'
+      }
+    }
     const incompleteRecipe = recetas.some(
       (r) => r.idProducto === '' || r.cantidad === '' || Number(r.cantidad) <= 0,
     )
@@ -184,6 +194,7 @@ function PlatoForm({
         nombre,
         descripcion: descripcion || undefined,
         precio: precio === '' ? undefined : Number(precio),
+        precioLlevar: precioLlevar === '' ? null : Number(precioLlevar),
         img: img || undefined,
         idCategoria: idCategoria === '' ? null : { id: Number(idCategoria) },
       }
@@ -262,15 +273,25 @@ function PlatoForm({
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <Input
-                label="Precio"
+                label="Precio (Mesa)"
                 type="number"
                 min={0}
                 step="0.01"
                 value={precio}
                 onChange={(e) => setPrecio(e.target.value)}
                 error={fieldErrors.precio}
+              />
+              <Input
+                label="Precio Llevar (Opcional)"
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="Igual a mesa"
+                value={precioLlevar}
+                onChange={(e) => setPrecioLlevar(e.target.value)}
+                error={fieldErrors.precioLlevar}
               />
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-gray-700">

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Visor de pedidos | Pinchos</title>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+    <header class="encabezado">
+        <div class="marca">
+            <span class="marca-punto" aria-hidden="true"></span>
+            <div>
+                <p class="marca-superior">Pinchos · operación</p>
+                <h1>Visor de pedidos</h1>
+            </div>
+        </div>
+        <div id="estado-conexion" class="estado-conexion">Conectando</div>
+    </header>
+
+    <main>
+        <section id="login-panel" class="panel login-panel">
+            <h2>Acceso al visor</h2>
+            <p>Usa tu cuenta del POS. El visor solo consulta pedidos.</p>
+            <form id="form-login">
+                <label for="usuario">Correo o usuario</label>
+                <input id="usuario" name="email" type="text" autocomplete="username" autocapitalize="off" required>
+                <label for="contrasena">Contraseña</label>
+                <input id="contrasena" name="password" type="password" autocomplete="current-password" required>
+                <button class="boton boton-principal boton-ancho" type="submit">Ingresar</button>
+            </form>
+            <p id="error-login" class="mensaje-error" role="alert"></p>
+        </section>
+
+        <section id="visor-panel" class="visor-panel oculto">
+            <div class="controles panel">
+                <div class="fila-perfiles">
+                    <div class="campo-perfil">
+                        <label for="perfil-guardado">Perfil de pantalla</label>
+                        <select id="perfil-guardado">
+                            <option value="">Configuración actual</option>
+                        </select>
+                    </div>
+                    <div class="campo-perfil campo-nombre">
+                        <label for="nombre-perfil">Guardar como</label>
+                        <input id="nombre-perfil" type="text" maxlength="40" placeholder="Ej. Parrilla">
+                    </div>
+                    <button id="guardar-perfil" class="boton boton-principal" type="button">Guardar perfil</button>
+                    <button id="eliminar-perfil" class="boton boton-secundario" type="button">Eliminar</button>
+                    <button id="cerrar-sesion" class="boton boton-secundario" type="button">Salir</button>
+                </div>
+
+                <div class="controles-inferiores">
+                    <div>
+                        <div class="titulo-control">Categorías de esta pantalla</div>
+                        <div class="acciones-categorias">
+                            <button id="todas-categorias" class="boton boton-secundario" type="button">Todas</button>
+                            <button id="ninguna-categoria" class="boton boton-secundario" type="button">Ninguna</button>
+                        </div>
+                        <div id="categorias" class="categorias" aria-live="polite"></div>
+                    </div>
+                    <div class="preferencias">
+                        <label class="opcion">
+                            <input id="mostrar-mesa" type="checkbox" checked>
+                            <span>Mesa y servicio</span>
+                        </label>
+                        <label class="opcion">
+                            <input id="mostrar-comentario" type="checkbox" checked>
+                            <span>Comentarios</span>
+                        </label>
+                        <label class="opcion">
+                            <input id="sonido-activo" type="checkbox" checked>
+                            <span>Alerta sonora</span>
+                        </label>
+                        <button id="probar-sonido" class="boton boton-sonido" type="button">Probar sonido</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="barra-pedidos">
+                <h2>Pedidos pendientes</h2>
+                <span id="ultima-actualizacion">Esperando datos</span>
+                <button id="pantalla-completa" class="boton boton-principal boton-pantalla" type="button">En pantalla completa</button>
+            </div>
+            <p id="mensaje-visor" class="mensaje-visor" role="status"></p>
+            <div id="lista-pedidos" class="lista-pedidos"></div>
+        </section>
+    </main>
+
+    <footer>
+        <span>Actualización automática cada 10 segundos</span>
+        <span>Solo lectura · cambios no modifican el pedido</span>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

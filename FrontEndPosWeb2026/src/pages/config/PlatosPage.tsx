@@ -149,9 +149,16 @@ export function PlatosPage() {
                   {rutaCategoria(plato.idCategoria, categorias ?? [])}
                 </p>
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="text-lg font-bold text-gray-900">
-                    {plato.precio != null ? `$${plato.precio.toFixed(2)}` : '—'}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-gray-900">
+                      {plato.precio != null ? `$${plato.precio.toFixed(2)}` : '—'}
+                    </span>
+                    {plato.precioLlevar != null && (
+                      <span className="text-[11px] font-semibold text-amber-700">
+                        Llevar: ${plato.precioLlevar.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1">
                     <Link
                       to={`/configuracion/platos/${plato.id}`}

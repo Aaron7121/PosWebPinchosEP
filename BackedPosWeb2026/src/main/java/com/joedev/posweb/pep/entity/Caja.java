@@ -18,10 +18,10 @@ public class Caja {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "fecha_apertura", nullable = false)
+    @Column(name = "fecha_apertura", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private Instant fechaApertura;
 
-    @Column(name = "fecha_cierre")
+    @Column(name = "fecha_cierre", columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private Instant fechaCierre;
 
     @ManyToOne(fetch = FetchType.EAGER)

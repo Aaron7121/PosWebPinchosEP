@@ -57,6 +57,13 @@ export function CajaTab() {
     },
   })
 
+  const { data: resumenAbierta } = useQuery({
+    queryKey: ['cajas', cajaAbierta?.id, 'resumen-cierre'],
+    queryFn: () => getResumenCierre(cajaAbierta!.id),
+    enabled: !!cajaAbierta?.id,
+    refetchInterval: 10_000,
+  })
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       {isLoading ? (
@@ -79,10 +86,19 @@ export function CajaTab() {
               Activa
             </span>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            <ResumenCaja label="Monto esperado" valor={cajaAbierta.montoEsperado} />
-            <ResumenCaja label="Cajero" valor={cajaAbierta.idEmpleado?.nombre} textToNumber={false} />
+
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <ResumenCaja label="Fondo inicial" valor={cajaAbierta.montoEsperado} />
+            <ResumenCaja label="Ventas Efectivo" valor={resumenAbierta?.totalEfectivo ?? 0} />
+            <ResumenCaja label="Transferencias" valor={resumenAbierta?.totalTransferencia ?? 0} />
+            <ResumenCaja label="Total en Caja" valor={resumenAbierta?.efectivoEsperado ?? cajaAbierta.montoEsperado} />
           </div>
+
+          <div className="mt-3 flex items-center justify-between rounded-xl bg-gray-50 px-4 py-2.5 text-xs text-gray-600">
+            <span>Cajero: <strong className="text-gray-800">{cajaAbierta.idEmpleado?.nombre ?? '—'}</strong></span>
+            <span>Total Ventas: <strong className="text-gray-800">{formatCurrency((resumenAbierta?.totalEfectivo ?? 0) + (resumenAbierta?.totalTransferencia ?? 0))}</strong></span>
+          </div>
+
           {cajaAbierta.observaciones && (
             <p className="mt-3 text-sm text-gray-500">
               {cajaAbierta.observaciones}

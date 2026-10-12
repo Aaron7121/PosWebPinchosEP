@@ -15,6 +15,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -26,7 +28,16 @@ import java.util.Map;
 @ApplicationScoped
 public class CajaService {
 
-    private static final ZoneId ZONA_NEGOCIO = ZoneId.of("America/Guayaquil");
+    @ConfigProperty(name = "pos.zona-horaria", defaultValue = "America/Guayaquil")
+    String zonaConfigurada;
+
+    private ZoneId getZonaNegocio() {
+        try {
+            return ZoneId.of(zonaConfigurada);
+        } catch (Exception e) {
+            return ZoneId.systemDefault();
+        }
+    }
 
     @Inject
     CajaRepository repository;
@@ -61,10 +72,11 @@ public class CajaService {
 
     public ResumenCierreCaja resumenCierre(Long id) {
         Caja caja = obtenerPorId(id);
-        OffsetDateTime desde = OffsetDateTime.ofInstant(caja.getFechaApertura(), ZoneId.systemDefault());
+        ZoneId zona = getZonaNegocio();
+        OffsetDateTime desde = OffsetDateTime.ofInstant(caja.getFechaApertura(), zona);
         OffsetDateTime hasta = caja.getFechaCierre() != null
-                ? OffsetDateTime.ofInstant(caja.getFechaCierre(), ZoneId.systemDefault())
-                : OffsetDateTime.now();
+                ? OffsetDateTime.ofInstant(caja.getFechaCierre(), zona)
+                : OffsetDateTime.now(zona);
 
         BigDecimal efectivo = BigDecimal.ZERO;
         BigDecimal transferencia = BigDecimal.ZERO;
@@ -84,8 +96,8 @@ public class CajaService {
         return new ResumenCierreCaja(montoInicial, efectivo, transferencia, efectivoEsperado, transferencia, totalEsperado);
     }
 
-    static LocalDate fechaNegocio(Instant instante) {
-        return LocalDate.ofInstant(instante, ZONA_NEGOCIO);
+    LocalDate fechaNegocio(Instant instante) {
+        return LocalDate.ofInstant(instante, getZonaNegocio());
     }
 
     static void validarPuedeAbrir(LocalDate fechaHoy, boolean cajaAbierta, List<InventarioDiario> inventarios) {
@@ -129,7 +141,8 @@ public class CajaService {
         if (caja.getFechaCierre() != null) {
             throw new ConflictoException("La caja ya está cerrada");
         }
-        OffsetDateTime desde = OffsetDateTime.ofInstant(caja.getFechaApertura(), ZoneId.systemDefault());
+        ZoneId zona = getZonaNegocio();
+        OffsetDateTime desde = OffsetDateTime.ofInstant(caja.getFechaApertura(), zona);
         long pendientes = pedidoRepository.countNoCompletadosDesde(desde);
         if (pendientes > 0) {
             throw new ConflictoException("No se puede cerrar la caja: hay " + pendientes

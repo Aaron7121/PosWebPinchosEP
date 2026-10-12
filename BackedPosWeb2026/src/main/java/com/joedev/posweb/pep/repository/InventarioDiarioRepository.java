@@ -25,6 +25,12 @@ public class InventarioDiarioRepository implements PanacheRepositoryBase<Inventa
                 .firstResultOptional();
     }
 
+    public Optional<InventarioDiario> findUltimoPorProductoForUpdate(Integer idProducto) {
+        return find("idProducto.id = ?1 order by fecha desc, id desc", idProducto)
+                .withLock(LockModeType.PESSIMISTIC_WRITE)
+                .firstResultOptional();
+    }
+
     public List<InventarioDiario> findByFecha(LocalDate fecha) {
         return find("fecha", fecha).list();
     }

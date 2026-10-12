@@ -27,6 +27,9 @@ public class Plato {
     @Column(name = "precio", nullable = false, precision = 8, scale = 2)
     private BigDecimal precio;
 
+    @Column(name = "precio_llevar", precision = 8, scale = 2)
+    private BigDecimal precioLlevar;
+
     @Column(name = "img", length = Integer.MAX_VALUE)
     private String img;
 
