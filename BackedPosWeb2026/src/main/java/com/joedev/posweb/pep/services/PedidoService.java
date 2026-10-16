@@ -78,13 +78,27 @@ public class PedidoService {
     @Inject
     IdempotenciaService idempotencia;
 
+    @org.eclipse.microprofile.config.inject.ConfigProperty(name = "pos.zona-horaria", defaultValue = "America/Guayaquil")
+    String zonaConfigurada;
+
+    private ZoneId getZonaNegocio() {
+        try {
+            return ZoneId.of(zonaConfigurada);
+        } catch (Exception e) {
+            return ZoneId.systemDefault();
+        }
+    }
+
     @Transactional
     public List<Pedido> listarTodos() {
         Optional<Caja> abierta = cajaRepository.findAbierta();
         if (abierta.isEmpty()) {
             return List.of();
         }
-        OffsetDateTime desde = abierta.get().getFechaApertura().atOffset(ZoneOffset.UTC);
+        // Usar la misma zona horaria del negocio que en CajaService y restar 5 segundos de margen
+        // para que pedidos creados simultáneamente o con microsegundos de diferencia con la apertura nunca se omitan
+        ZoneId zona = getZonaNegocio();
+        OffsetDateTime desde = OffsetDateTime.ofInstant(abierta.get().getFechaApertura().minusSeconds(5), zona);
         List<Pedido> pedidos = repository.find("fecha >= ?1 order by fecha desc", desde).list();
         for (Pedido pedido : pedidos) {
             String estadoAnterior = pedido.getEstadoPedido();

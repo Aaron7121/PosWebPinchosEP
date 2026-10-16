@@ -26,7 +26,7 @@ import {
   cambiarEstadoPedido,
 } from '../api/pedidos'
 import type { Pedido } from '../types/pos'
-import { formatCurrency, formatHora } from '../utils/format'
+import { formatCurrency, formatHora, todayISO } from '../utils/format'
 import { usePedidosUI } from '../store/pedidosUI'
 import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { CobroModal } from '../components/ui/CobroModal'
@@ -228,7 +228,7 @@ function TablaPedidosCompletados({
   onDeshacer: (id: number) => void
 }) {
   const [expandidoId, setExpandidoId] = useState<number | null>(null)
-  const hoyISO = useMemo(() => new Date().toISOString().slice(0, 10), [])
+  const hoyISO = useMemo(() => todayISO(), [])
 
   const pedidosOrdenados = useMemo(() => {
     return [...pedidos].sort((a, b) => {
@@ -238,9 +238,18 @@ function TablaPedidosCompletados({
     })
   }, [pedidos])
 
-  // Métricas del día
+  // Función auxiliar para obtener la fecha local YYYY-MM-DD de un pedido
+  const obtenerFechaLocal = (iso: string | null) => {
+    if (!iso) return ''
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return ''
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+    return local.toISOString().slice(0, 10)
+  }
+
+  // Métricas del día (usando fecha local coherente)
   const pedidosHoy = useMemo(() => {
-    return pedidos.filter((p) => p.fecha && p.fecha.startsWith(hoyISO))
+    return pedidos.filter((p) => obtenerFechaLocal(p.fecha) === hoyISO)
   }, [pedidos, hoyISO])
 
   const totalRecaudadoHoy = useMemo(() => {
