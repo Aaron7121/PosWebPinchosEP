@@ -30,7 +30,9 @@ import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
@@ -397,16 +399,29 @@ public class PedidoService {
         if (Boolean.FALSE.equals(producto.getEsContable())) {
             return;
         }
-        Optional<InventarioDiario> registro = inventarioRepository.findUltimoPorProductoForUpdate(producto.getId());
+        // Buscamos el inventario de la fecha de la caja abierta, que es exactamente
+        // la misma fecha que el frontend muestra y contra la que valida el stock.
+        // Antes se usaba findUltimoPorProductoForUpdate (el último histórico de cualquier
+        // fecha), lo que causaba que el backend descontara de un registro de otro día
+        // distinto al que el usuario estaba viendo en pantalla.
+        LocalDate fechaCaja = cajaRepository.findAbierta()
+                .map(c -> c.getFechaApertura().atZone(ZoneId.of("America/Guayaquil")).toLocalDate())
+                .orElseThrow(() -> new ConflictoException("Debe abrir caja antes de registrar pedidos"));
+
+        Optional<InventarioDiario> registro = inventarioRepository
+                .findByFechaAndProductoForUpdate(fechaCaja, producto.getId());
+
         if (registro.isEmpty()) {
-            throw new ConflictoException("No hay inventario registrado para el producto " + producto.getNombre() + ". Registra su inventario antes de continuar");
+            throw new ConflictoException("No hay inventario registrado para el producto \"" + producto.getNombre()
+                    + "\" en la fecha de caja (" + fechaCaja + "). Registra el inventario del día antes de continuar");
         }
         InventarioDiario inventario = registro.get();
         BigDecimal nuevo = "SALIDA".equals(tipo)
                 ? inventario.getCantidadActual().subtract(cantidad)
                 : inventario.getCantidadActual().add(cantidad);
         if (nuevo.signum() < 0) {
-            throw new ConflictoException("Stock insuficiente del producto " + producto.getNombre() + " para realizar el pedido");
+            throw new ConflictoException("Stock insuficiente del producto \"" + producto.getNombre()
+                    + "\" para realizar el pedido (disponible: " + inventario.getCantidadActual() + ", requerido: " + cantidad + ")");
         }
         inventario.setCantidadActual(nuevo);
     }

@@ -51,8 +51,10 @@ class CajaServiceTest {
     @Test
     void obtieneLaFechaDeEcuadorAunqueEnUtcYaSeaElDiaSiguiente() {
         Instant instante = Instant.parse("2026-10-07T04:30:00Z");
+        CajaService service = new CajaService();
+        service.zonaConfigurada = "America/Guayaquil";
 
-        assertEquals(LocalDate.of(2026, 10, 6), CajaService.fechaNegocio(instante));
+        assertEquals(LocalDate.of(2026, 10, 6), service.fechaNegocio(instante));
     }
 
     private static InventarioDiario inventario(LocalDate fecha) {
