@@ -87,16 +87,31 @@ export function CajaTab() {
             </span>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <ResumenCaja label="Fondo inicial" valor={cajaAbierta.montoEsperado} />
             <ResumenCaja label="Ventas Efectivo" valor={resumenAbierta?.totalEfectivo ?? 0} />
             <ResumenCaja label="Transferencias" valor={resumenAbierta?.totalTransferencia ?? 0} />
-            <ResumenCaja label="Total en Caja" valor={resumenAbierta?.efectivoEsperado ?? cajaAbierta.montoEsperado} />
           </div>
 
-          <div className="mt-3 flex items-center justify-between rounded-xl bg-gray-50 px-4 py-2.5 text-xs text-gray-600">
-            <span>Cajero: <strong className="text-gray-800">{cajaAbierta.idEmpleado?.nombre ?? '—'}</strong></span>
-            <span>Total Ventas: <strong className="text-gray-800">{formatCurrency((resumenAbierta?.totalEfectivo ?? 0) + (resumenAbierta?.totalTransferencia ?? 0))}</strong></span>
+          {/* Resumen destacado de Ventas del Turno */}
+          <div className="mt-4 flex items-center justify-between rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 via-amber-50 to-orange-100/60 p-4 shadow-xs">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-orange-600">
+                Ventas del Turno
+              </p>
+              <p className="mt-0.5 text-xs text-gray-500">
+                Total acumulado en este turno (sin pedidos cancelados)
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-3xl font-black tracking-tight text-orange-600 sm:text-4xl">
+                {formatCurrency((resumenAbierta?.totalEfectivo ?? 0) + (resumenAbierta?.totalTransferencia ?? 0))}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between rounded-xl bg-gray-50 px-4 py-2 text-xs text-gray-600">
+            <span>Cajero en turno: <strong className="text-gray-800">{cajaAbierta.idEmpleado?.nombre ?? '—'}</strong></span>
           </div>
 
           {cajaAbierta.observaciones && (
@@ -107,7 +122,7 @@ export function CajaTab() {
           <button
             type="button"
             onClick={() => setCerrando(true)}
-            className="mt-4 w-full rounded-xl bg-gray-900 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-gray-800"
+            className="mt-4 w-full rounded-xl bg-gray-900 px-4 py-3 font-bold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.99]"
           >
             Cerrar caja
           </button>
@@ -344,6 +359,23 @@ function CerrarCajaModal({
           </p>
         ) : (
           <>
+            {/* Banner destacado de Ventas del Turno */}
+            <div className="flex items-center justify-between rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 via-amber-50 to-orange-100/60 p-4 shadow-xs">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-orange-600">
+                  Ventas del Turno
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Total cobrado en este turno (sin cancelados)
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-black tracking-tight text-orange-600 sm:text-3xl">
+                  {formatCurrency(resumen.totalEfectivo + resumen.totalTransferencia)}
+                </span>
+              </div>
+            </div>
+
             <div className="rounded-2xl bg-gray-50 px-4 py-3 text-sm">
               <FilaResumen label="Monto inicial (fondo)" valor={resumen.montoInicial} />
               <FilaResumen label="Ventas en efectivo" valor={resumen.totalEfectivo} />

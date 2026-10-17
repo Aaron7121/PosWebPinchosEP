@@ -1,3 +1,4 @@
+
 import { Menu } from 'lucide-react'
 import logoNegocio from '../../api/assets/logoNegocio.png'
 import { SoundToggle } from '../ui/SoundToggle'

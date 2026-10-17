@@ -26,7 +26,7 @@ import {
   cambiarEstadoPedido,
 } from '../api/pedidos'
 import type { Pedido } from '../types/pos'
-import { formatCurrency, formatHora, todayISO } from '../utils/format'
+import { formatCurrency, formatHora } from '../utils/format'
 import { usePedidosUI } from '../store/pedidosUI'
 import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { CobroModal } from '../components/ui/CobroModal'
@@ -156,15 +156,7 @@ export function PedidosPage() {
             No hay pedidos para mostrar.
           </p>
         ) : tabEfectiva === 'COMPLETADO' ? (
-          <TablaPedidosCompletados
-            pedidos={visibles}
-            onDeshacer={(id) =>
-              estadoMutation.mutate({
-                id,
-                estadoPedido: 'ENTREGADO',
-              })
-            }
-          />
+          <TablaPedidosCompletados pedidos={visibles} />
         ) : (
           <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-3 lg:grid-cols-3">
             {visibles.map((pedido) => (
@@ -222,13 +214,11 @@ export function PedidosPage() {
 
 function TablaPedidosCompletados({
   pedidos,
-  onDeshacer,
 }: {
   pedidos: Pedido[]
-  onDeshacer: (id: number) => void
 }) {
   const [expandidoId, setExpandidoId] = useState<number | null>(null)
-  const hoyISO = useMemo(() => todayISO(), [])
+  const hoyISO = useMemo(() => new Date().toISOString().slice(0, 10), [])
 
   const pedidosOrdenados = useMemo(() => {
     return [...pedidos].sort((a, b) => {
@@ -238,28 +228,27 @@ function TablaPedidosCompletados({
     })
   }, [pedidos])
 
-  // Función auxiliar para obtener la fecha local YYYY-MM-DD de un pedido
-  const obtenerFechaLocal = (iso: string | null) => {
-    if (!iso) return ''
-    const d = new Date(iso)
-    if (Number.isNaN(d.getTime())) return ''
-    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-    return local.toISOString().slice(0, 10)
-  }
+  // Métricas del día (con fallback a pedidos completados visibles si no hay registros hoy)
+  const tieneHoy = useMemo(
+    () => pedidos.some((p) => p.fecha && p.fecha.startsWith(hoyISO)),
+    [pedidos, hoyISO]
+  )
 
-  // Métricas del día (usando fecha local coherente)
-  const pedidosHoy = useMemo(() => {
-    return pedidos.filter((p) => obtenerFechaLocal(p.fecha) === hoyISO)
-  }, [pedidos, hoyISO])
+  const pedidosCalculo = useMemo(() => {
+    if (tieneHoy) {
+      return pedidos.filter((p) => p.fecha && p.fecha.startsWith(hoyISO))
+    }
+    return pedidos
+  }, [pedidos, hoyISO, tieneHoy])
 
-  const totalRecaudadoHoy = useMemo(() => {
-    return pedidosHoy.reduce((acc, p) => acc + (p.total ?? 0), 0)
-  }, [pedidosHoy])
+  const totalRecaudado = useMemo(() => {
+    return pedidosCalculo.reduce((acc, p) => acc + (p.total ?? 0), 0)
+  }, [pedidosCalculo])
 
-  const ticketPromedioHoy = useMemo(() => {
-    if (pedidosHoy.length === 0) return 0
-    return totalRecaudadoHoy / pedidosHoy.length
-  }, [pedidosHoy, totalRecaudadoHoy])
+  const ticketPromedio = useMemo(() => {
+    if (pedidosCalculo.length === 0) return 0
+    return totalRecaudado / pedidosCalculo.length
+  }, [pedidosCalculo, totalRecaudado])
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
@@ -267,24 +256,24 @@ function TablaPedidosCompletados({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Total recaudado (Hoy)
+            Total recaudado {tieneHoy ? '(Hoy)' : ''}
           </p>
           <p className="mt-1 text-2xl font-black text-gray-900">
-            {formatCurrency(totalRecaudadoHoy)}
+            {formatCurrency(totalRecaudado)}
           </p>
           <span className="mt-0.5 text-xs text-gray-500">
-            {pedidosHoy.length} pedidos completados hoy
+            {pedidosCalculo.length} {tieneHoy ? 'pedidos completados hoy' : 'pedidos completados'}
           </span>
         </div>
 
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Ticket promedio (Hoy)
+            Ticket promedio {tieneHoy ? '(Hoy)' : ''}
           </p>
           <p className="mt-1 text-2xl font-black text-gray-900">
-            {formatCurrency(ticketPromedioHoy)}
+            {formatCurrency(ticketPromedio)}
           </p>
-          <span className="mt-0.5 text-xs text-gray-500">Promedio por orden del día</span>
+          <span className="mt-0.5 text-xs text-gray-500">Promedio por orden</span>
         </div>
 
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
@@ -321,7 +310,7 @@ function TablaPedidosCompletados({
                 <th className="px-3 py-3.5">Platos / Ítems</th>
                 <th className="px-3 py-3.5">Tipo de pago</th>
                 <th className="px-3 py-3.5 text-right">Total</th>
-                <th className="py-3.5 pl-3 pr-6 text-right">Acción</th>
+                <th className="py-3.5 pl-3 pr-6 text-right">Detalle</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -335,7 +324,6 @@ function TablaPedidosCompletados({
                     onToggleExpandir={() =>
                       setExpandidoId((curr) => (curr === pedido.id ? null : pedido.id))
                     }
-                    onDeshacer={() => onDeshacer(pedido.id)}
                   />
                 )
               })}
@@ -351,12 +339,10 @@ function FilaPedidoCompletado({
   pedido,
   expandido,
   onToggleExpandir,
-  onDeshacer,
 }: {
   pedido: Pedido
   expandido: boolean
   onToggleExpandir: () => void
-  onDeshacer: () => void
 }) {
   const { data: detalles = [] } = useQuery({
     queryKey: ['pedidos', pedido.id, 'detalles'],
@@ -450,27 +436,13 @@ function FilaPedidoCompletado({
         </td>
 
         <td className="whitespace-nowrap py-3.5 pl-3 pr-6 text-right">
-          <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                onDeshacer()
-              }}
-              title="Mover de vuelta a pedidos activos"
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:text-gray-900"
-            >
-              <Undo2 className="h-3 w-3" />
-              Deshacer
-            </button>
-            <span className="text-gray-400">
-              {expandido ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </span>
-          </div>
+          <span className="inline-flex items-center text-gray-400">
+            {expandido ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </span>
         </td>
       </tr>
 

@@ -25,7 +25,7 @@ public class DetallePagoRepository implements PanacheRepositoryBase<DetallePago,
 
     public List<Object[]> resumenPorTipo(OffsetDateTime inicio, OffsetDateTime fin) {
         return getEntityManager()
-                .createQuery("select d.tipo, sum(d.total) from DetallePago d where d.fecha >= :inicio and d.fecha < :fin group by d.tipo", Object[].class)
+                .createQuery("select d.tipo, sum(d.total) from DetallePago d where d.fecha >= :inicio and d.fecha < :fin and (d.idPedido is null or d.idPedido.estadoPedido <> 'CANCELADO') group by d.tipo", Object[].class)
                 .setParameter("inicio", inicio)
                 .setParameter("fin", fin)
                 .getResultList();
