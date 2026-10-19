@@ -27,6 +27,7 @@ public class RecetaPlatoProductoResource {
     @Inject
     RecetaPlatoProductoService service;
 
+    @RolesAllowed({"ADMIN", "COLABORADOR"})
     @GET
     public List<RecetaPlatoProducto> listarTodos() {
         return service.listarTodos();

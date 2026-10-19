@@ -11,6 +11,8 @@ RUN mvn clean package -DskipTests
 # ETAPA 2: Ejecución (El "corredor" súper ligero)
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+# ImageMagick con soporte WebP para optimizar las imagenes subidas
+RUN apk add --no-cache imagemagick imagemagick-webp
 # Quarkus genera una carpeta especial llamada 'quarkus-app' cuando compila.
 # Copiamos solo esa carpeta de la Etapa 1 a esta nueva imagen limpia.
 COPY --from=build /app/target/quarkus-app/lib/ /app/lib/

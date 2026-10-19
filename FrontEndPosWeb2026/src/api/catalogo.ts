@@ -115,6 +115,10 @@ export function getRecetasByPlato(idPlato: number) {
   return request<RecetaPlatoProducto[]>(`/recetas-plato-producto/plato/${idPlato}`)
 }
 
+export function getTodasLasRecetas() {
+  return request<RecetaPlatoProducto[]>('/recetas-plato-producto')
+}
+
 export function createReceta(payload: RecetaRequest) {
   return request<RecetaPlatoProducto>('/recetas-plato-producto', {
     method: 'POST',

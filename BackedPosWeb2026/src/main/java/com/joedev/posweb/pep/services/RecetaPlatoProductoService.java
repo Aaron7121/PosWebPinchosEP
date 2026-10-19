@@ -20,7 +20,7 @@ public class RecetaPlatoProductoService {
     NotificationService notifier;
 
     public List<RecetaPlatoProducto> listarTodos() {
-        return repository.listAll();
+        return repository.listAllConDetalle();
     }
 
     public RecetaPlatoProducto obtenerPorId(Integer id) {

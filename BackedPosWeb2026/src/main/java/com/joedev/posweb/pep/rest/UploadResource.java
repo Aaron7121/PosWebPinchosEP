@@ -1,5 +1,6 @@
 package com.joedev.posweb.pep.rest;
 
+import com.joedev.posweb.pep.services.MigracionImagenesService;
 import com.joedev.posweb.pep.services.UploadService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -21,6 +22,16 @@ public class UploadResource {
 
     @Inject
     UploadService service;
+
+    @Inject
+    MigracionImagenesService migracion;
+
+    @RolesAllowed("ADMIN")
+    @POST
+    @Path("/optimizar-existentes")
+    public Response optimizarExistentes() {
+        return Response.ok(migracion.migrar()).build();
+    }
 
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)

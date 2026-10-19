@@ -17,13 +17,14 @@ import { getCajaAbierta } from '../api/caja'
 import {
   getCategoriasActivas,
   getPlatosActivos,
-  getRecetasByPlato,
+  getTodasLasRecetas,
 } from '../api/catalogo'
 import { getUltimoInventario } from '../api/inventario'
 import { createPedido, getDetallesPedido, getPedido, updatePedido } from '../api/pedidos'
 import type { Plato } from '../types/catalogo'
 import type { Pedido } from '../types/pos'
 import { formatCurrency } from '../utils/format'
+import { miniatura } from '../utils/miniatura'
 import { getInventoryCheck } from '../utils/inventario'
 import type { InventoryIssue } from '../utils/inventario'
 import { playSound } from '../utils/sound'
@@ -56,8 +57,10 @@ function PlatoCard({
     >
       {plato.img ? (
         <img
-          src={plato.img}
+          src={miniatura(plato.img)}
           alt={plato.nombre}
+          loading="lazy"
+          decoding="async"
           className="h-28 w-full rounded-t-3xl object-cover transition-transform group-hover:scale-105"
         />
       ) : (
@@ -200,8 +203,9 @@ function OrderPOS() {
   })
 
   const { data: platos, isLoading } = useQuery({
-    queryKey: ['platos', categoryId],
+    queryKey: ['platos', 'activos'],
     queryFn: getPlatosActivos,
+    staleTime: 10 * 60 * 1000,
   })
 
   const { data: inventarioReal = [] } = useQuery({
@@ -210,15 +214,19 @@ function OrderPOS() {
   })
 
   const { data: recetasPorPlato = {} } = useQuery({
-    queryKey: ['recetas-por-plato', (platos ?? []).map((plato) => plato.id).join(',')],
+    // Prefijo 'platos' para que catalogo:modificado (SSE) la invalide
+    queryKey: ['platos', 'recetas'],
     queryFn: async () => {
-      const platosActuales = platos ?? []
-      const entries = await Promise.all(
-        platosActuales.map(async (plato) => [plato.id, await getRecetasByPlato(plato.id)] as const),
-      )
-      return Object.fromEntries(entries)
+      const recetas = await getTodasLasRecetas()
+      const porPlato: Record<number, typeof recetas> = {}
+      for (const receta of recetas) {
+        const idPlato = receta.idPlato?.id
+        if (idPlato == null) continue
+        ;(porPlato[idPlato] ??= []).push(receta)
+      }
+      return porPlato
     },
-    enabled: (platos ?? []).length > 0,
+    staleTime: 10 * 60 * 1000,
   })
 
   // Al editar, el stock del pedido original cuenta como disponible (solo para validar, sin movimientos).

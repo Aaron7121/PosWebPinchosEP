@@ -1,4 +1,5 @@
 import type { Plato } from '../types/catalogo'
+import { miniatura } from './miniatura'
 
 const TAMANO = 52
 
@@ -26,7 +27,7 @@ export function volarAlCarrito(origen: HTMLElement, plato: Pick<Plato, 'img' | '
     width: `${TAMANO}px`,
     height: `${TAMANO}px`,
     borderRadius: '16px',
-    background: plato.img ? `center / cover url("${plato.img}")` : '#fed7aa',
+    background: plato.img ? `center / cover url("${miniatura(plato.img, 160)}")` : '#fed7aa',
     color: '#fb923c',
     display: 'flex',
     alignItems: 'center',

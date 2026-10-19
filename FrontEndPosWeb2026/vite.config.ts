@@ -19,6 +19,18 @@ export default defineConfig(({ command }) => ({
       workbox: {
         // Incluye los audios en el precache para que suenen sin conexión
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,mp3,wav,ogg}'],
+        // Fotos de platos: tras la primera descarga salen del telefono sin red
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/uploads/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'pos-uploads',
+              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
       manifest: {
         name: 'POS Pinchos el Parqueadero',

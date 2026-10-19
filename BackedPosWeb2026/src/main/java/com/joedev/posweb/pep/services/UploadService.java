@@ -2,6 +2,7 @@ package com.joedev.posweb.pep.services;
 
 import com.joedev.posweb.pep.exception.DatoInvalidoException;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
@@ -28,6 +29,9 @@ public class UploadService {
     @ConfigProperty(name = "pos.upload.dir")
     String uploadDir;
 
+    @Inject
+    ImagenOptimizador optimizador;
+
     public String guardarImagen(FileUpload upload, String tipo) {
         if (upload == null) {
             throw new DatoInvalidoException("Debe enviarse un archivo en el campo 'file'");
@@ -40,15 +44,22 @@ public class UploadService {
             throw new DatoInvalidoException("La imagen no puede superar los 5 MB");
         }
         String carpeta = resolverCarpeta(tipo);
-        String nombre = UUID.randomUUID() + "." + EXTENSIONES.get(contentType);
         Path destino = Path.of(uploadDir, carpeta);
         try {
             Files.createDirectories(destino);
+            String base = UUID.randomUUID().toString();
+            String formato = contentType.substring("image/".length());
+            Path optimizada = destino.resolve(base + ".webp");
+            if (optimizador.aWebp(upload.filePath(), formato, optimizada)) {
+                return "/uploads/" + carpeta + "/" + optimizada.getFileName();
+            }
+            // Sin optimizador disponible: se guarda el original
+            String nombre = base + "." + EXTENSIONES.get(contentType);
             Files.move(upload.filePath(), destino.resolve(nombre), StandardCopyOption.REPLACE_EXISTING);
+            return "/uploads/" + carpeta + "/" + nombre;
         } catch (IOException e) {
             throw new DatoInvalidoException("No se pudo guardar la imagen: " + e.getMessage());
         }
-        return "/uploads/" + carpeta + "/" + nombre;
     }
 
     private String resolverCarpeta(String tipo) {

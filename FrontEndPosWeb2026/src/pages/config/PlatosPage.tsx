@@ -9,6 +9,7 @@ import {
   getPlatosByCategoria,
 } from '../../api/catalogo'
 import type { CategoriaPlato, Plato } from '../../types/catalogo'
+import { miniatura } from '../../utils/miniatura'
 
 function rutaCategoria(
   categoria: CategoriaPlato | null,
@@ -134,8 +135,10 @@ export function PlatosPage() {
             >
               {plato.img ? (
                 <img
-                  src={plato.img}
+                  src={miniatura(plato.img)}
                   alt={plato.nombre}
+                  loading="lazy"
+                  decoding="async"
                   className="h-28 w-full object-cover"
                 />
               ) : (

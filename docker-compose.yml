@@ -6,8 +6,7 @@ services:
     restart: unless-stopped # Si la PC se reinicia, la base se enciende sola
     env_file:
       - .env # Lee las contraseñas de tu archivo secreto
-    ports:
-      - "${DB_PORT}:5432" # Mapea el 5433 de tu PC al 5432 del contenedor
+    # Sin "ports": la BD solo es accesible desde la red interna de Docker
     volumes:
       # Guarda los datos reales en tu disco duro para que no se borren si apagas Docker
       - pos-data:/var/lib/postgresql/data 
@@ -22,14 +21,16 @@ services:
     restart: unless-stopped
     depends_on:
       - postgres-db # Espera a que la BD encienda primero
-    ports:
-      - "8080:8080" # Exponemos el 8080 a tu PC
+    # Sin "ports": solo Nginx (frontend-web) lo alcanza por la red interna
     environment:
       # AQUÍ ESTÁ LA MAGIA: Sobreescribimos el application.properties de Quarkus.
       # Nota que en la URL no dice "localhost", dice "postgres-db" (el nombre del contenedor de arriba)
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres-db:5432/${POSTGRES_DB}
       QUARKUS_DATASOURCE_USERNAME: ${POSTGRES_USER}
       QUARKUS_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      # Las imagenes subidas deben sobrevivir a reconstrucciones del contenedor
+      - pos-uploads:/app/uploads
 
 # 3. NUESTRO FRONTEND (React + Nginx)
   frontend-web:
@@ -45,10 +46,23 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      CERT_HOST: ${CERT_HOST:-localhost}
+      CERT_HOST: ${CERT_HOST:-pinchoswebmoran.local}
     volumes:
       - ./FrontEndPosWeb2026/certs:/etc/nginx/certs
       - ./generar-certificado.sh:/usr/local/bin/generar-certificado.sh:ro
 
+# 4. mDNS: anuncia pinchoswebmoran.local en la LAN.
+# Solo funciona con Docker nativo en Linux; en Docker Desktop (Windows/Mac) el "host" es una VM
+# y no llega a la red física. Se activa con COMPOSE_PROFILES=mdns en .env.
+  avahi:
+    image: solidnerd/avahi
+    container_name: mi-avahi-pos
+    profiles: ["mdns"]
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./avahi/avahi-daemon.conf:/etc/avahi/avahi-daemon.conf:ro
+
 volumes:
   pos-data:
+  pos-uploads:
