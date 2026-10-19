@@ -142,6 +142,20 @@ function OrderPOS() {
     new Set(),
   )
   const [busqueda, setBusqueda] = useState('')
+
+  function handleSelectCategory(id: number | null) {
+    setCategoryId(id)
+    if (busqueda !== '') {
+      setBusqueda('')
+    }
+  }
+
+  function handleBusquedaChange(valor: string) {
+    setBusqueda(valor)
+    if (valor.trim().length > 0 && categoryId !== null) {
+      setCategoryId(null)
+    }
+  }
   const [cart, setCart] = useState<CartItem[]>([])
   const [tipoServicio, setTipoServicio] = useState('MESA')
   const [numMesa, setNumMesa] = useState('')
@@ -264,8 +278,17 @@ function OrderPOS() {
   const platosDeCategoria = (id: number | null) =>
     (platos ?? []).filter((plato) => plato.idCategoria?.id === id)
 
-  const coincideBusqueda = (p: Plato) =>
-    p.nombre.toLowerCase().includes(busqueda.trim().toLowerCase())
+  const coincideBusqueda = (p: Plato) => {
+    const term = busqueda.trim().toLowerCase()
+    if (!term) return true
+    const nombre = p.nombre.toLowerCase()
+    return (
+      nombre.includes(term) ||
+      nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(
+        term.normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
+      )
+    )
+  }
   const platosDirectos =
     categoryId == null
       ? (platos ?? []).filter(coincideBusqueda)
@@ -577,17 +600,32 @@ function OrderPOS() {
             <input
               type="text"
               value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
+              onChange={(e) => handleBusquedaChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setBusqueda('')
+              }}
               placeholder="Buscar..."
-              className="w-full rounded-full border border-gray-200 py-1.5 sm:py-2 pl-9 pr-3 text-xs sm:text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+              className={`w-full rounded-full border border-gray-200 py-1.5 sm:py-2 pl-9 ${
+                busqueda ? 'pr-8' : 'pr-3'
+              } text-xs sm:text-sm outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-100`}
             />
+            {busqueda && (
+              <button
+                type="button"
+                onClick={() => setBusqueda('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer"
+                aria-label="Limpiar búsqueda"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         </header>
 
         <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-white px-6 py-3">
           <button
             type="button"
-            onClick={() => setCategoryId(null)}
+            onClick={() => handleSelectCategory(null)}
             className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               categoryId == null
                 ? 'bg-orange-50 text-orange-500'
@@ -600,7 +638,7 @@ function OrderPOS() {
             <button
               key={categoria.id}
               type="button"
-              onClick={() => setCategoryId(categoria.id)}
+              onClick={() => handleSelectCategory(categoria.id)}
               className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 categoryId === categoria.id
                   ? 'bg-orange-50 text-orange-500'
@@ -617,9 +655,11 @@ function OrderPOS() {
             <p className="col-span-full py-8 text-center text-sm text-gray-400">
               Cargando...
             </p>
-          ) : categoryId != null && subcategorias.length === 0 && platosDirectos.length === 0 ? (
+          ) : platosDirectos.length === 0 && subcategorias.length === 0 ? (
             <p className="col-span-full py-8 text-center text-sm text-gray-400">
-              No hay platos para mostrar.
+              {busqueda.trim()
+                ? `No se encontraron resultados para "${busqueda.trim()}".`
+                : 'No hay platos para mostrar.'}
             </p>
           ) : (
             <>
