@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, Delete, Plus, Trash2, UserRound } from 'lucide-react'
 import { createPago, getPagosPedido } from '../../api/pagos'
-import type { DetallePedido, Pedido } from '../../types/pos'
+import type { ClientePagoRequest, DetallePedido, PagoItemRequest, Pedido } from '../../types/pos'
 import { formatCurrency, formatFecha, todayISO } from '../../utils/format'
 
 const METODOS = [
@@ -30,13 +30,19 @@ export function CobroForm({
   onSuccess,
   detalles,
   isLoadingDetalles = false,
+  onCobrar,
 }: {
   pedido: Pedido
   onSuccess?: () => void
   detalles?: DetallePedido[]
   isLoadingDetalles?: boolean
+  onCobrar?: (data: {
+    cliente?: ClientePagoRequest
+    pagos: PagoItemRequest[]
+  }) => Promise<void>
 }) {
   const queryClient = useQueryClient()
+  const isDraft = !pedido.id || pedido.id === 0
   const totalInicial = pedido.total ?? 0
   const [lineas, setLineas] = useState<Linea[]>([
     { key: 1, tipo: 'EFECTIVO', monto: totalInicial > 0 ? totalInicial.toFixed(2) : '' },
@@ -66,6 +72,7 @@ export function CobroForm({
   const { data: pagos } = useQuery({
     queryKey: ['pagos', pedido.id],
     queryFn: () => getPagosPedido(pedido.id),
+    enabled: !isDraft,
   })
 
   const pagado = useMemo(
@@ -118,30 +125,46 @@ export function CobroForm({
   const activeLinea = lineas[safeActiveIndex] ?? lineas[0]
 
   const mutation = useMutation({
-    mutationFn: () =>
-      createPago({
+    mutationFn: async () => {
+      const clienteData =
+        conCliente && (cedula || nombre || telefono || correo)
+          ? {
+              cedula: cedula.trim() || undefined,
+              nombre: nombre.trim() || undefined,
+              telefono: telefono.trim() || undefined,
+              correo: correo.trim() || undefined,
+            }
+          : undefined
+
+      const pagosData: PagoItemRequest[] = [
+        ...lineas
+          .filter((l) => l.tipo === 'TRANSFERENCIA')
+          .map((l) => ({ tipo: 'TRANSFERENCIA', monto: Number(l.monto) })),
+        ...(aplicadoEfectivoCents > 0
+          ? [{ tipo: 'EFECTIVO', monto: aplicadoEfectivoCents / 100 }]
+          : []),
+      ]
+
+      if (onCobrar) {
+        await onCobrar({
+          cliente: clienteData,
+          pagos: pagosData,
+        })
+        return
+      }
+
+      return createPago({
         idPedido: pedido.id,
-        cliente:
-          conCliente && (cedula || nombre || telefono || correo)
-            ? {
-                cedula: cedula.trim() || undefined,
-                nombre: nombre.trim() || undefined,
-                telefono: telefono.trim() || undefined,
-                correo: correo.trim() || undefined,
-              }
-            : undefined,
-        pagos: [
-          ...lineas
-            .filter((l) => l.tipo === 'TRANSFERENCIA')
-            .map((l) => ({ tipo: 'TRANSFERENCIA', monto: Number(l.monto) })),
-          ...(aplicadoEfectivoCents > 0
-            ? [{ tipo: 'EFECTIVO', monto: aplicadoEfectivoCents / 100 }]
-            : []),
-        ],
-      }),
+        cliente: clienteData,
+        pagos: pagosData,
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] })
-      queryClient.invalidateQueries({ queryKey: ['pagos', pedido.id] })
+      queryClient.invalidateQueries({ queryKey: ['cajas'] })
+      if (!isDraft) {
+        queryClient.invalidateQueries({ queryKey: ['pagos', pedido.id] })
+      }
       onSuccess?.()
     },
   })
@@ -273,8 +296,8 @@ export function CobroForm({
     if (pedido.numMesa) return `M${pedido.numMesa}`
     if (pedido.tipoServicio === 'LLEVAR') return 'Llev.'
     if (pedido.tipoServicio === 'DELIVERY') return 'Deliv.'
-    return `#${pedido.id}`
-  }, [pedido.numMesa, pedido.tipoServicio, pedido.id])
+    return isDraft ? 'Nuevo' : `#${pedido.id}`
+  }, [pedido.numMesa, pedido.tipoServicio, pedido.id, isDraft])
 
   const itemsMesa = useMemo(
     () => (detalles ?? []).filter((d) => !d.paraLlevar),
@@ -300,7 +323,7 @@ export function CobroForm({
                 {conCliente && nombre.trim() ? nombre : 'Consumidor Final'}
               </h4>
               <p className="mt-0.5 text-xs text-gray-500">
-                #{pedido.id} · {tipoServicioLabel}
+                {isDraft ? tipoServicioLabel : `#${pedido.id} · ${tipoServicioLabel}`}
               </p>
             </div>
           </div>
@@ -697,6 +720,15 @@ export function CobroForm({
       {!excesoTransferencia && cambioCents > 0 && (
         <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-center text-xs font-bold text-green-700">
           Cambio a devolver: {formatCurrency(cambioCents / 100)}
+        </div>
+      )}
+
+      {/* Mensaje de error al procesar */}
+      {mutation.isError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-2.5 text-center text-xs font-medium text-red-600">
+          {mutation.error instanceof Error
+            ? mutation.error.message
+            : 'Error al procesar el cobro. Intenta nuevamente.'}
         </div>
       )}
 

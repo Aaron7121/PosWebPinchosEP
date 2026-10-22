@@ -20,9 +20,10 @@ import {
   getTodasLasRecetas,
 } from '../api/catalogo'
 import { getUltimoInventario } from '../api/inventario'
+import { createPago } from '../api/pagos'
 import { createPedido, getDetallesPedido, getPedido, updatePedido } from '../api/pedidos'
 import type { Plato } from '../types/catalogo'
-import type { Pedido } from '../types/pos'
+import type { ClientePagoRequest, PagoItemRequest, Pedido } from '../types/pos'
 import { formatCurrency } from '../utils/format'
 import { miniatura } from '../utils/miniatura'
 import { getInventoryCheck } from '../utils/inventario'
@@ -167,6 +168,7 @@ function OrderPOS() {
   const [stockToast, setStockToast] = useState<{ text: string; key: number } | null>(null)
   const silenciado = useNotificationsStore((s) => s.silenciado)
   const idempotencyKeyRef = useRef<string | undefined>(undefined)
+  const pedidoCreadoIdRef = useRef<number | null>(null)
   const cartBarStartYRef = useRef<number | null>(null)
   const cartSheetStartYRef = useRef<number | null>(null)
   const [pedidoACobrar, setPedidoACobrar] = useState<Pedido | null>(null)
@@ -210,6 +212,12 @@ function OrderPOS() {
       setCostoEnvio(envio > 0.005 ? envio.toFixed(2) : '')
     }
   }, [detallesPedidoEditar, isEditMode, pedidoEditar])
+
+  useEffect(() => {
+    if (isEditMode && pedidoEditar?.estadoPago === 'PAGADO') {
+      navigate('/pedidos', { replace: true })
+    }
+  }, [isEditMode, pedidoEditar, navigate])
 
   const { data: categorias } = useQuery({
     queryKey: ['categorias'],
@@ -436,7 +444,25 @@ function OrderPOS() {
       return
     }
 
-    mutation.mutate({ cobrar })
+    if (cobrar) {
+      const draftPedido: Pedido = {
+        id: 0,
+        fecha: new Date().toISOString(),
+        idCliente: null,
+        idEmpleado: null,
+        total,
+        tipoServicio,
+        numMesa: numMesa === '' ? null : Number(numMesa),
+        comentario: comentario || null,
+        estadoPedido: 'PENDIENTE',
+        estadoPago: 'PENDIENTE',
+      }
+      setPedidoACobrar(draftPedido)
+      setCartOpen(false)
+      return
+    }
+
+    mutation.mutate({ cobrar: false })
   }
 
   function handleGuardarPedido(e: SyntheticEvent) {
@@ -462,7 +488,50 @@ function OrderPOS() {
     updateMutation.mutate()
   }
 
+  async function handleConfirmarCobro(datosCobro: {
+    cliente?: ClientePagoRequest
+    pagos: PagoItemRequest[]
+  }) {
+    let pedidoId = pedidoCreadoIdRef.current
+    if (!pedidoId) {
+      if (!idempotencyKeyRef.current) {
+        idempotencyKeyRef.current = uuid()
+      }
+      const nuevoPedido = await createPedido({
+        tipoServicio,
+        numMesa: numMesa === '' ? undefined : Number(numMesa),
+        comentario: comentario || undefined,
+        idempotencyKey: idempotencyKeyRef.current,
+        costoEnvio: esDelivery ? envio : undefined,
+        detalles: cart.map((i) => ({
+          idPlato: i.plato.id,
+          cantidad: i.cantidad,
+          paraLlevar: i.paraLlevar,
+        })),
+      })
+      pedidoId = nuevoPedido.id
+      pedidoCreadoIdRef.current = pedidoId
+      idempotencyKeyRef.current = undefined
+    }
+
+    await createPago({
+      idPedido: pedidoId,
+      cliente: datosCobro.cliente,
+      pagos: datosCobro.pagos,
+    })
+
+    cerrarCobro()
+  }
+
+  function handleCloseCobroModal() {
+    pedidoCreadoIdRef.current = null
+    setPedidoACobrar(null)
+  }
+
   function cerrarCobro() {
+    pedidoCreadoIdRef.current = null
+    idempotencyKeyRef.current = undefined
+    setCostoEnvio('')
     setCart([])
     setNumMesa('')
     setComentario('')
@@ -791,7 +860,22 @@ function OrderPOS() {
       {pedidoACobrar && (
         <CobroModal
           pedido={pedidoACobrar}
-          onClose={() => setPedidoACobrar(null)}
+          detalles={
+            pedidoACobrar.id === 0
+              ? cart.map((item, index) => ({
+                  id: index + 1,
+                  idPedido: null,
+                  idPlato: item.plato,
+                  cantidad: item.cantidad,
+                  precioUnitario: getPrecioUnitarioItem(item),
+                  subtotal: getPrecioUnitarioItem(item) * item.cantidad,
+                  tipoPago: null,
+                  paraLlevar: item.paraLlevar,
+                }))
+              : undefined
+          }
+          onCobrar={pedidoACobrar.id === 0 ? handleConfirmarCobro : undefined}
+          onClose={handleCloseCobroModal}
           onPaid={cerrarCobro}
         />
       )}

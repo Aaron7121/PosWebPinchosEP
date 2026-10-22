@@ -611,7 +611,7 @@ function PedidoCard({
             <span className="truncate text-sm font-semibold text-gray-700">
               {prefijoPedido} #{pedido.id}
             </span>
-            {esPendiente && (
+            {esPendiente && !pagado && (
               <button
                 type="button"
                 onClick={onEditar}

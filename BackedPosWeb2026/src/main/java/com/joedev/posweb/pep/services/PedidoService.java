@@ -228,6 +228,9 @@ public class PedidoService {
         if (!"PENDIENTE".equals(pedido.getEstadoPedido())) {
             throw new ConflictoException("Solo se pueden editar pedidos pendientes");
         }
+        if ("PAGADO".equals(pedido.getEstadoPago())) {
+            throw new ConflictoException("No se puede editar un pedido que ya está cobrado");
+        }
 
         if (request.tipoServicio() != null) {
             pedido.setTipoServicio(request.tipoServicio());
