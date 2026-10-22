@@ -633,7 +633,7 @@ function OrderPOS() {
     <div className="flex h-full flex-1 overflow-hidden">
       {/* Área central: productos */}
       <section className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 items-center gap-3 border-b border-gray-100 bg-white px-4 sm:px-6">
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-gray-100 bg-white px-4 sm:px-6">
           <h1 className="text-lg font-bold text-gray-900 shrink-0">{pageTitle}</h1>
 
           {/* Toggle de modo para pedidos en Mesa */}
@@ -691,7 +691,7 @@ function OrderPOS() {
           </div>
         </header>
 
-        <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-white px-6 py-3">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-100 bg-white px-6 py-3">
           <button
             type="button"
             onClick={() => handleSelectCategory(null)}
@@ -719,7 +719,7 @@ function OrderPOS() {
           ))}
         </div>
 
-        <div className="grid flex-1 auto-rows-min grid-cols-2 gap-4 overflow-y-auto px-6 pt-6 pb-24 md:grid-cols-3 lg:grid-cols-4 lg:pb-6">
+        <div className="grid flex-1 auto-rows-min grid-cols-2 gap-4 overflow-y-auto overscroll-contain px-6 pt-6 pb-24 md:grid-cols-3 lg:grid-cols-4 lg:pb-6">
           {isLoading ? (
             <p className="col-span-full py-8 text-center text-sm text-gray-400">
               Cargando...

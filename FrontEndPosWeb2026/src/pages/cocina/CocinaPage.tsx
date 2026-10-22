@@ -39,7 +39,7 @@ export function CocinaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6" onPointerDown={unlockAudio}>
+    <div className="h-full overflow-y-auto bg-gray-50 p-6" onPointerDown={unlockAudio}>
       <div className="mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -144,7 +144,7 @@ function PerfilEditor({
   const valido = datos.nombre.trim() !== '' && datos.categoriaIds.length > 0
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="h-full overflow-y-auto bg-gray-50 p-6">
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center gap-3">
           <button type="button" onClick={onClose} className="rounded-lg p-2 text-gray-500 hover:bg-gray-200">

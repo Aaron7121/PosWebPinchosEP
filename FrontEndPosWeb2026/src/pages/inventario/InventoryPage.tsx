@@ -53,7 +53,7 @@ export function InventoryPage() {
         ))}
       </nav>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-6">
         {tab === 'caja' && <CajaTab />}
         {tab === 'inventario' && <InventarioTab />}
         {tab === 'movimientos' && <MovimientosTab />}

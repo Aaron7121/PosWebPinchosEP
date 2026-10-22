@@ -62,7 +62,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       )}
 
       {/* Collapsible sidebar (md+) */}
-      <aside className={`hidden md:flex flex-col shrink-0 border-r border-gray-100 bg-white transition-all duration-200 ${
+      <aside className={`hidden md:flex flex-col shrink-0 border-r border-gray-100 bg-white transition-all duration-200 h-full select-none ${
         collapsed ? 'w-20' : 'w-64'
       }`}>
         <SidebarContent

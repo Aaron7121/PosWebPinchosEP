@@ -22,9 +22,9 @@ export function AppLayout() {
   }, [])
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-50">
+    <div className="fixed inset-0 flex h-full w-full overflow-hidden bg-gray-50 overscroll-none">
       <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <main className="flex flex-1 flex-col overflow-hidden min-w-0 h-full">
         <MobileHeader onMenuClick={() => setMenuOpen(true)} />
         <Outlet />
       </main>

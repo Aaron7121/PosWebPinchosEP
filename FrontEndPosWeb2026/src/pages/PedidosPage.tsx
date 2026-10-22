@@ -113,9 +113,7 @@ export function PedidosPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-100 bg-white px-6">
-        <h1 className="text-lg font-bold text-gray-900">Pedidos</h1>
-      </header>
+      
 
       <div className="flex shrink-0 gap-2 overflow-x-auto border-b border-gray-100 bg-white px-6 py-3">
         {TABS.map((tab) => {
@@ -148,7 +146,7 @@ export function PedidosPage() {
         })}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-6">
         {isLoading ? (
           <p className="py-8 text-center text-sm text-gray-400">Cargando...</p>
         ) : visibles.length === 0 ? (

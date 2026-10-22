@@ -76,12 +76,13 @@ export function StatisticsPage() {
   const isLoading = loadingTop || loadingBottom || loadingVentas || loadingDashboard || loadingRendimiento;
 
   return (
-    <div className="flex-1 p-6 overflow-auto">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Estadísticas del Negocio</h1>
-        </div>
+    <div className="flex h-full flex-col overflow-hidden">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-100 bg-white px-6">
+        <h1 className="text-lg font-bold text-gray-900">Estadísticas del Negocio</h1>
+      </header>
+
+      <div className="flex-1 overflow-y-auto overscroll-contain p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Filtros */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -193,5 +194,6 @@ export function StatisticsPage() {
         )}
       </div>
     </div>
+  </div>
   );
 }
